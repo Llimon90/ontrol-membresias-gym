@@ -27,7 +27,7 @@ document.getElementById('add-member-form').addEventListener('submit', function(e
     }
     
     // Enviar datos al servidor
-    fetch('add_member.php', {
+    fetch('/backend/add_member.php', {
         method: 'POST',
         body: formData
     })

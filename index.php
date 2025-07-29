@@ -357,6 +357,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
       }
     }
   </style>
+
 </head>
 <body>
   <div class="container">
@@ -395,6 +396,9 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
         <div class="label"><i class="fas fa-exclamation-circle"></i> Necesitan renovación</div>
       </div>
     </div>
+
+
+
 
     <!-- Formulario de miembros -->
     <div class="card">
@@ -450,6 +454,21 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
         <?php endif; ?>
       </form>
     </div>
+
+        <!-- PAGINACION LISTADO DE MIEMBROS -->
+         <?php
+
+    // Configuración de paginación
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$perPage = 10;
+$start = ($page > 1) ? ($page * $perPage) - $perPage : 0;
+
+// Obtener el total de miembros
+$total = $pdo->query("SELECT COUNT(*) FROM members")->fetchColumn();
+
+// Calcular el total de páginas
+$pages = ceil($total / $perPage);
+?>
 
     <!-- Listado de miembros -->
     <div class="card">

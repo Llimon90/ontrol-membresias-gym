@@ -86,7 +86,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
       --gray: #6c757d;
       --bg-dark: #1a1a2e;
       --bg-card: #16213e;
-      --text-primary: #443c3cff;
+      --text-primary: #ece5e5ff;
       --text-secondary: #4d4040ff;
     }
 

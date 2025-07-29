@@ -459,7 +459,6 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
         <table>
           <thead>
             <tr>
-              
               <th>Nombre</th>
               <th>Contacto</th>
               <th>Membresía</th>
@@ -487,12 +486,11 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
               }
             ?>
               <tr>
-                <td><?= htmlspecialchars($m['id']) ?></td>
                 <td>
-    <a href="member_profile.php?id=<?= $m['id'] ?>" style="color: var(--success); text-decoration: none;">
-        <i class="fas fa-user"></i> <?= htmlspecialchars($m['name']) ?>
-    </a>
-</td>
+                  <a href="member_profile.php?id=<?= $m['id'] ?>" style="color: var(--success); text-decoration: none;">
+                    <i class="fas fa-user"></i> <?= htmlspecialchars($m['name']) ?>
+                  </a>
+                </td>
                 <td>
                   <div><?= htmlspecialchars($m['phone']) ?></div>
                   <small style="color: var(--gray);"><?= htmlspecialchars($m['email']) ?></small>

@@ -25,6 +25,7 @@ async function fetchMembers() {
   list.forEach(m => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
+      <td>${m.id}</td>
       <td>${m.name}</td>
       <td>${m.phone}</td>
       <td>${m.membership_name}</td>

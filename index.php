@@ -1,6 +1,6 @@
 <?php
 // Establecer la zona horaria correcta (ejemplo para México)
-date_default_timezone_set('America/Mexico_City');
+date_default_timezone_set('America/Tijuana');
 require 'backend/config.php';
 
 // Obtener estadísticas

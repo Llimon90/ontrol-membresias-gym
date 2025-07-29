@@ -70,117 +70,128 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
   <style>
 /* styles.css */
 
-/* Paleta basada en tema Dracula */
+/* 1. Definición de variables de color */
 :root {
-  --bg-primary: #282a36;
-  --bg-secondary: #44475a;
-  --bg-card: #373846;
-  --text-primary: #f8f8f2;
-  --text-secondary: #6272a4;
-  --accent-green: #50fa7b;
-  --accent-orange: #ffb86c;
-  --accent-pink: #ff79c6;
-  --accent-purple: #bd93f9;
+  /* Colores por defecto (modo claro opcional) */
+  --bg: #ffffff;
+  --bg-secondary: #f0f0f0;
+  --card: #ffffff;
+  --text-primary: #2d2d2d;
+  --text-secondary: #555555;
+  --accent: #4a90e2;
+  --success: #28a745;
+  --danger: #dc3545;
 }
 
-/* Forzar esquema oscuro preferido */
-:root {
-  color-scheme: dark;
+/* 2. Modo oscuro automático */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #282a36;
+    --bg-secondary: #44475a;
+    --card: #373846;
+    --text-primary: #f8f8f2;
+    --text-secondary: #6272a4;
+    --accent: #bd93f9;
+    --success: #50fa7b;
+    --danger: #ff5555;
+  }
 }
 
-/* Base */
-* {
+/* 3. Estilos base responsive */
+*,
+*:before,
+*:after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
 }
 
 body {
-  background-color: var(--bg-primary);
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, sans-serif;
+  background-color: var(--bg);
   color: var(--text-primary);
-  font-family: 'Segoe UI', Arial, sans-serif;
-  font-size: 16px;
   line-height: 1.5;
-  padding: 20px;
+  padding: 1rem;
 }
 
-/* Tipografía clara y legible en móviles y desktop */
-h1, h2, h3 {
-  color: var(--text-primary);
-  margin-bottom: 1rem;
-}
-
-p, label {
-  color: var(--text-secondary);
-}
-
-/* Contenedores responsivos */
+/* Contenedor centrado */
 .container {
-  max-width: 900px;
+  max-width: 960px;
   margin: auto;
-  padding: 10px;
+  padding: 1rem;
 }
 
-/* Tarjetas */
+/* Tarjetas y secciones */
 .card {
-  background-color: var(--bg-card);
-  padding: 20px;
+  background-color: var(--card);
   border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 /* Formularios */
-form {
-  width: 100%;
-}
 .form-group {
-  margin-bottom: 15px;
+  margin-bottom: 1rem;
 }
 label {
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 0.5rem;
+  color: var(--text-secondary);
 }
 input[type="text"],
 input[type="email"],
 input[type="date"],
 select {
   width: 100%;
-  padding: 10px;
+  padding: 0.75rem;
   background-color: var(--bg-secondary);
   color: var(--text-primary);
-  border: 1px solid var(--text-secondary);
+  border: 1px solid var(--accent);
   border-radius: 4px;
 }
-input:focus, select:focus {
+input:focus,
+select:focus {
   outline: none;
-  border-color: var(--accent-green);
+  box-shadow: 0 0 0 3px rgba(189, 147, 249, 0.4);
 }
 
-/* Botones vistosos */
+/* Botones */
 .btn {
   display: inline-block;
-  background-color: var(--accent-orange);
+  background-color: var(--accent);
   color: var(--text-primary);
-  padding: 10px 20px;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
   border: none;
   border-radius: 4px;
-  font-weight: bold;
   cursor: pointer;
-  transition: background-color .3s ease;
+  transition: background-color 0.3s ease;
+  text-decoration: none;
 }
 .btn:hover {
-  background-color: var(--accent-pink);
+  background-color: #9e7de5;
 }
 
-/* Tablas responsive */
+/* Botones pequeños */
+.btn-small {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+}
+.btn-delete {
+  background-color: var(--danger);
+}
+.btn-delete:hover {
+  background-color: #e14c4c;
+}
+
+/* Tablas responsivas */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 20px;
+  margin-top: 1rem;
 }
 th, td {
-  padding: 12px;
+  padding: 0.75rem;
   border-bottom: 1px solid var(--bg-secondary);
   text-align: left;
 }
@@ -188,26 +199,11 @@ th {
   background-color: var(--bg-secondary);
 }
 tr:nth-child(even) {
-  background-color: var(--bg-card);
-}
-/* Acción botones en tabla */
-.btn-small {
-  padding: 6px 10px;
-  font-size: 0.9rem;
-}
-.btn-delete {
-  background-color: #ff5555;
-}
-.btn-delete:hover {
-  background-color: #ff4444;
+  background-color: var(--card);
 }
 
-/* Responsive: columnas al vuelo */
+/* Etiquetas para móviles */
 @media (max-width: 600px) {
-  body {
-    padding: 10px;
-    font-size: 15px;
-  }
   table, thead, tbody, th, td, tr {
     display: block;
   }
@@ -216,27 +212,35 @@ tr:nth-child(even) {
   }
   tr {
     margin-bottom: 1rem;
-    background: var(--bg-card);
-    padding: 10px;
+    background-color: var(--card);
     border-radius: 4px;
+    padding: 0.5rem;
   }
   td {
-    padding: 8px;
     position: relative;
+    padding-left: 50%;
+    text-align: right;
   }
   td::before {
     content: attr(data-label);
     position: absolute;
-    left: 8px;
-    top: 8px;
+    left: 0.75rem;
+    width: 45%;
+    padding-right: 0.5rem;
     font-weight: bold;
     color: var(--text-secondary);
+    text-align: left;
   }
 }
 
 /* Mensajes */
-.text-success { color: var(--accent-green); }
-.text-error { color: var(--accent-pink); }
+.text-success {
+  color: var(--success);
+}
+.text-error {
+  color: var(--danger);
+}
+
 
   </style>
 </head>

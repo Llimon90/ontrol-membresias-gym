@@ -68,18 +68,176 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
   <meta name="viewport" content="width=device‑width,initial‑scale=1">
   <title>Gestión Miembros | CRUD PHP</title>
   <style>
-    body { font-family: Arial, sans-serif; margin:20px; background:#f4f4f4; }
-    .form-group { margin-bottom:10px; }
-    label{display:block;margin-bottom:5px;}
-    input, select{width:100%;padding:8px;}
-    .error { color:#a00; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th,td{padding:8px;border:1px solid #ccc;}
-    th { background:#eee; }
-    a { text-decoration:none;color:#069; }
-    a:hover { text-decoration:underline; }
-    .btn { padding:6px 12px; margin-right:5px; background:#069;color:#fff;border:none;border-radius:4px;cursor:pointer; }
-    .btn-delete { background:#c22; }
+/* styles.css */
+
+/* Paleta basada en tema Dracula */
+:root {
+  --bg-primary: #282a36;
+  --bg-secondary: #44475a;
+  --bg-card: #373846;
+  --text-primary: #f8f8f2;
+  --text-secondary: #6272a4;
+  --accent-green: #50fa7b;
+  --accent-orange: #ffb86c;
+  --accent-pink: #ff79c6;
+  --accent-purple: #bd93f9;
+}
+
+/* Forzar esquema oscuro preferido */
+:root {
+  color-scheme: dark;
+}
+
+/* Base */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 20px;
+}
+
+/* Tipografía clara y legible en móviles y desktop */
+h1, h2, h3 {
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+p, label {
+  color: var(--text-secondary);
+}
+
+/* Contenedores responsivos */
+.container {
+  max-width: 900px;
+  margin: auto;
+  padding: 10px;
+}
+
+/* Tarjetas */
+.card {
+  background-color: var(--bg-card);
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* Formularios */
+form {
+  width: 100%;
+}
+.form-group {
+  margin-bottom: 15px;
+}
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+input[type="text"],
+input[type="email"],
+input[type="date"],
+select {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--text-secondary);
+  border-radius: 4px;
+}
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-green);
+}
+
+/* Botones vistosos */
+.btn {
+  display: inline-block;
+  background-color: var(--accent-orange);
+  color: var(--text-primary);
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color .3s ease;
+}
+.btn:hover {
+  background-color: var(--accent-pink);
+}
+
+/* Tablas responsive */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+th, td {
+  padding: 12px;
+  border-bottom: 1px solid var(--bg-secondary);
+  text-align: left;
+}
+th {
+  background-color: var(--bg-secondary);
+}
+tr:nth-child(even) {
+  background-color: var(--bg-card);
+}
+/* Acción botones en tabla */
+.btn-small {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+.btn-delete {
+  background-color: #ff5555;
+}
+.btn-delete:hover {
+  background-color: #ff4444;
+}
+
+/* Responsive: columnas al vuelo */
+@media (max-width: 600px) {
+  body {
+    padding: 10px;
+    font-size: 15px;
+  }
+  table, thead, tbody, th, td, tr {
+    display: block;
+  }
+  thead {
+    display: none;
+  }
+  tr {
+    margin-bottom: 1rem;
+    background: var(--bg-card);
+    padding: 10px;
+    border-radius: 4px;
+  }
+  td {
+    padding: 8px;
+    position: relative;
+  }
+  td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: 8px;
+    top: 8px;
+    font-weight: bold;
+    color: var(--text-secondary);
+  }
+}
+
+/* Mensajes */
+.text-success { color: var(--accent-green); }
+.text-error { color: var(--accent-pink); }
+
   </style>
 </head>
 <body>

@@ -64,9 +64,7 @@ if (isset($_GET['delete'])) {
 $memberships = $pdo->query("SELECT * FROM memberships")->fetchAll(PDO::FETCH_ASSOC);
 $members = $pdo->query("SELECT m.*, ms.name AS membership_name
                         FROM members m
-                        JOIN memberships ms ON m.membership_id=ms.id
-                        ORDER BY m.name ASC
-                        LIMIT $start, $perPage")->fetchAll(PDO::FETCH_ASSOC);
+                        JOIN memberships ms ON m.membership_id=ms.id")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -359,7 +357,6 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
       }
     }
   </style>
-
 </head>
 <body>
   <div class="container">
@@ -398,9 +395,6 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
         <div class="label"><i class="fas fa-exclamation-circle"></i> Necesitan renovación</div>
       </div>
     </div>
-
-
-
 
     <!-- Formulario de miembros -->
     <div class="card">
@@ -457,7 +451,6 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
       </form>
     </div>
 
-        
     <!-- Listado de miembros -->
     <div class="card">
       <h2 class="card-title"><i class="fas fa-users"></i> Listado de Miembros</h2>
@@ -581,11 +574,6 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
             <?php endif; ?>
           </tbody>
         </table>
-        <!-- PAGINACION LISTADO MIEMBROS -->
-         
-      
-      
-      
       </div>
     </div>
   </div>

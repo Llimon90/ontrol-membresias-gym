@@ -1,12 +1,21 @@
 <?php
 require 'backend/config.php';
 
+// Obtener estadísticas
+$stats = [
+    'total_members' => $pdo->query("SELECT COUNT(*) FROM members")->fetchColumn(),
+    'active_members' => $pdo->query("SELECT COUNT(*) FROM members WHERE end_date >= CURDATE()")->fetchColumn(),
+    'expiring_members' => $pdo->query("SELECT COUNT(*) FROM members WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)")->fetchColumn(),
+    'expired_members' => $pdo->query("SELECT COUNT(*) FROM members WHERE end_date < CURDATE()")->fetchColumn(),
+    'popular_membership' => $pdo->query("SELECT ms.name, COUNT(m.id) as count FROM members m JOIN memberships ms ON m.membership_id=ms.id GROUP BY m.membership_id ORDER BY count DESC LIMIT 1")->fetch(PDO::FETCH_ASSOC)
+];
+
+// Procesar formulario (igual que antes)
 $error = '';
 $editing = false;
 $editId = 0;
 $editData = null;
 
-// Procesar Create o Update
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
@@ -37,7 +46,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Preparar edición
 if (isset($_GET['edit'])) {
     $editing = true;
     $editId = intval($_GET['edit']);
@@ -46,7 +54,6 @@ if (isset($_GET['edit'])) {
     $editData = $s->fetch(PDO::FETCH_ASSOC);
 }
 
-// Eliminar
 if (isset($_GET['delete'])) {
     $del = $pdo->prepare("DELETE FROM members WHERE id=?");
     $del->execute([intval($_GET['delete'])]);
@@ -54,7 +61,6 @@ if (isset($_GET['delete'])) {
     exit;
 }
 
-// Obtener listas
 $memberships = $pdo->query("SELECT * FROM memberships")->fetchAll(PDO::FETCH_ASSOC);
 $members = $pdo->query("SELECT m.*, ms.name AS membership_name
                         FROM members m
@@ -64,232 +70,510 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF‑8">
-  <meta name="viewport" content="width=device‑width,initial‑scale=1">
-  <title>Gestión Miembros | CRUD PHP</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Gimnasio | Gestión de Miembros</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
-    /* styles.css */
+    :root {
+      --primary: #4361ee;
+      --secondary: #3f37c9;
+      --success: #4cc9f0;
+      --warning: #f8961e;
+      --danger: #f72585;
+      --dark: #212529;
+      --light: #f8f9fa;
+      --gray: #6c757d;
+      --bg-dark: #1a1a2e;
+      --bg-card: #16213e;
+      --text-primary: #ffffff;
+      --text-secondary: #e2e2e2;
+    }
 
-/* Paleta basada en tema Dracula */
-:root {
-  --bg-primary: #282a36;
-  --bg-secondary: #44475a;
-  --bg-card: #373846;
-  --text-primary: #f8f8f2;
-  --text-secondary: #6272a4;
-  --accent-green: #50fa7b;
-  --accent-orange: #ffb86c;
-  --accent-pink: #ff79c6;
-  --accent-purple: #bd93f9;
-}
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-/* Forzar esquema oscuro preferido */
-:root {
-  color-scheme: dark;
-}
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-primary);
+      line-height: 1.6;
+    }
 
-/* Base */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
 
-body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Segoe UI', Arial, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
-  padding: 20px;
-}
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-/* Tipografía clara y legible en móviles y desktop */
-h1, h2, h3 {
-  color: var(--text-primary);
-  margin-bottom: 1rem;
-}
+    .header h1 {
+      font-size: 28px;
+      color: var(--success);
+    }
 
-p, label {
-  color: var(--text-secondary);
-}
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
 
-/* Contenedores responsivos */
-.container {
-  max-width: 900px;
-  margin: auto;
-  padding: 10px;
-}
+    .stat-card {
+      background-color: var(--bg-card);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease;
+    }
 
-/* Tarjetas */
-.card {
-  background-color: var(--bg-card);
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 20px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.4);
-}
+    .stat-card:hover {
+      transform: translateY(-5px);
+    }
 
-/* Formularios */
-form {
-  width: 100%;
-}
-.form-group {
-  margin-bottom: 15px;
-}
-label {
-  display: block;
-  margin-bottom: 5px;
-}
-input[type="text"],
-input[type="email"],
-input[type="date"],
-select {
-  width: 100%;
-  padding: 10px;
-  background-color: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--text-secondary);
-  border-radius: 4px;
-}
-input:focus, select:focus {
-  outline: none;
-  border-color: var(--accent-green);
-}
+    .stat-card h3 {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
 
-/* Botones vistosos */
-.btn {
-  display: inline-block;
-  background-color: var(--accent-orange);
-  color: var(--text-primary);
-  padding: 10px 20px;
-  border: none;
-  border-radius: 4px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color .3s ease;
-}
-.btn:hover {
-  background-color: var(--accent-pink);
-}
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
 
-/* Tablas responsive */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-th, td {
-  padding: 12px;
-  border-bottom: 1px solid var(--bg-secondary);
-  text-align: left;
-}
-th {
-  background-color: var(--bg-secondary);
-}
-tr:nth-child(even) {
-  background-color: var(--bg-card);
-}
-/* Acción botones en tabla */
-.btn-small {
-  padding: 6px 10px;
-  font-size: 0.9rem;
-}
-.btn-delete {
-  background-color: #ff5555;
-}
-.btn-delete:hover {
-  background-color: #ff4444;
-}
+    .stat-card .label {
+      display: flex;
+      align-items: center;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
 
-/* Responsive: columnas al vuelo */
-@media (max-width: 600px) {
-  body {
-    padding: 10px;
-    font-size: 15px;
-  }
-  table, thead, tbody, th, td, tr {
-    display: block;
-  }
-  thead {
-    display: none;
-  }
-  tr {
-    margin-bottom: 1rem;
-    background: var(--bg-card);
-    padding: 10px;
-    border-radius: 4px;
-  }
-  td {
-    padding: 8px;
-    position: relative;
-  }
-  td::before {
-    content: attr(data-label);
-    position: absolute;
-    left: 8px;
-    top: 8px;
-    font-weight: bold;
-    color: var(--text-secondary);
-  }
-}
+    .stat-card .label i {
+      margin-right: 8px;
+    }
 
-/* Mensajes */
-.text-success { color: var(--accent-green); }
-.text-error { color: var(--accent-pink); }
+    .card {
+      background-color: var(--bg-card);
+      border-radius: 10px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
 
+    .card-title {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: var(--success);
+      display: flex;
+      align-items: center;
+    }
+
+    .card-title i {
+      margin-right: 10px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 10px 15px;
+      background-color: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 5px;
+      color: var(--text-primary);
+      font-size: 14px;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 10px 20px;
+      border-radius: 5px;
+      font-weight: 500;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: none;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background-color: var(--secondary);
+    }
+
+    .btn-danger {
+      background-color: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background-color: #d1146a;
+    }
+
+    .btn-success {
+      background-color: var(--success);
+      color: white;
+    }
+
+    .btn-success:hover {
+      background-color: #3ab4d9;
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 13px;
+    }
+
+    .table-responsive {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th {
+      background-color: rgba(67, 97, 238, 0.2);
+      color: var(--text-primary);
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 500;
+    }
+
+    td {
+      padding: 12px 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+    }
+
+    tr:hover td {
+      background-color: rgba(255, 255, 255, 0.03);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .status-active {
+      background-color: rgba(76, 201, 240, 0.2);
+      color: var(--success);
+    }
+
+    .status-expiring {
+      background-color: rgba(248, 150, 30, 0.2);
+      color: var(--warning);
+    }
+
+    .status-expired {
+      background-color: rgba(247, 37, 133, 0.2);
+      color: var(--danger);
+    }
+
+    .actions {
+      display: flex;
+      gap: 5px;
+    }
+
+    .text-error {
+      color: var(--danger);
+      font-size: 14px;
+      margin-top: 5px;
+    }
+
+    .text-success {
+      color: var(--success);
+    }
+
+    @media (max-width: 768px) {
+      .stats-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+      
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      
+      .header h1 {
+        margin-bottom: 15px;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>Gestión de Miembros</h1>
-  <?php if ($error): ?><p class="error"><?=htmlspecialchars($error)?></p><?php endif; ?>
-
-  <form method="post">
-    <input type="hidden" name="edit_id" value="<?= $editing ? $editId : '' ?>">
-    <div class="form-group"><label>Nombre *</label>
-      <input name="name" value="<?= $editing ? htmlspecialchars($editData['name']) : '' ?>" required></div>
-    <div class="form-group"><label>Email</label>
-      <input type="email" name="email" value="<?= $editing ? htmlspecialchars($editData['email']) : '' ?>"></div>
-    <div class="form-group"><label>Teléfono *</label>
-      <input name="phone" value="<?= $editing ? htmlspecialchars($editData['phone']) : '' ?>" required></div>
-    <div class="form-group"><label>Membresía *</label>
-      <select name="membership_id" required>
-        <option value="">Seleccione...</option>
-        <?php foreach($memberships as $ms): ?>
-          <option value="<?=$ms['id']?>" <?=$editing && $ms['id']==$editData['membership_id']?'selected':''?>>
-            <?=htmlspecialchars($ms['name'])?>
-          </option>
-        <?php endforeach; ?>
-      </select>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fas fa-dumbbell"></i> Dashboard Gimnasio</h1>
+      <div>
+        <span class="status-badge status-active">
+          <i class="fas fa-circle"></i> <?= date('d/m/Y H:i') ?>
+        </span>
+      </div>
     </div>
-    <div class="form-group"><label>Fecha de inicio *</label>
-      <input type="date" name="start_date" value="<?= $editing ? $editData['start_date'] : '' ?>" required></div>
-    <button type="submit" class="btn"><?= $editing ? 'Actualizar miembro' : 'Agregar miembro' ?></button>
-    <?php if ($editing): ?><a href="index.php">Cancelar edición</a><?php endif; ?>
-  </form>
 
-  <h2>Listado de Miembros</h2>
-  <table>
-    <thead><tr>
-      <th>ID</th><th>Nombre</th><th>Teléfono</th>
-      <th>Membresía</th><th>Inicio</th><th>Fin</th><th>Acciones</th>
-    </tr></thead>
-    <tbody>
-    <?php foreach($members as $m): ?>
-      <tr>
-        <td><?=htmlspecialchars($m['id'])?></td>
-        <td><?=htmlspecialchars($m['name'])?></td>
-        <td><?=htmlspecialchars($m['phone'])?></td>
-        <td><?=htmlspecialchars($m['membership_name'])?></td>
-        <td><?=htmlspecialchars($m['start_date'])?></td>
-        <td><?=htmlspecialchars($m['end_date'])?></td>
-        <td>
-          <a class="btn" href="?edit=<?= $m['id'] ?>">Editar</a>
-          <a class="btn btn-delete" href="?delete=<?= $m['id'] ?>" onclick="return confirm('¿Eliminar este miembro?')">Eliminar</a>
-        </td>
-      </tr>
-    <?php endforeach; ?>
-    </tbody>
-  </table>
+    <!-- Estadísticas -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <h3>Total Miembros</h3>
+        <div class="value"><?= $stats['total_members'] ?></div>
+        <div class="label"><i class="fas fa-users"></i> Todos los registros</div>
+      </div>
+      
+      <div class="stat-card">
+        <h3>Miembros Activos</h3>
+        <div class="value"><?= $stats['active_members'] ?></div>
+        <div class="label"><i class="fas fa-check-circle"></i> Membresías vigentes</div>
+      </div>
+      
+      <div class="stat-card">
+        <h3>Por Vencer</h3>
+        <div class="value"><?= $stats['expiring_members'] ?></div>
+        <div class="label"><i class="fas fa-clock"></i> Vencen en 7 días</div>
+      </div>
+      
+      <div class="stat-card">
+        <h3>Vencidos</h3>
+        <div class="value"><?= $stats['expired_members'] ?></div>
+        <div class="label"><i class="fas fa-exclamation-circle"></i> Necesitan renovación</div>
+      </div>
+    </div>
+
+    <!-- Formulario de miembros -->
+    <div class="card">
+      <h2 class="card-title"><i class="fas fa-user-plus"></i> <?= $editing ? 'Editar Miembro' : 'Agregar Nuevo Miembro' ?></h2>
+      <?php if ($error): ?>
+        <div class="text-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
+      <?php endif; ?>
+      
+      <form method="post">
+        <input type="hidden" name="edit_id" value="<?= $editing ? $editId : '' ?>">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre Completo *</label>
+            <input name="name" value="<?= $editing ? htmlspecialchars($editData['name']) : '' ?>" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" value="<?= $editing ? htmlspecialchars($editData['email']) : '' ?>">
+          </div>
+          
+          <div class="form-group">
+            <label>Teléfono *</label>
+            <input name="phone" value="<?= $editing ? htmlspecialchars($editData['phone']) : '' ?>" required>
+          </div>
+          
+          <div class="form-group">
+            <label>Tipo de Membresía *</label>
+            <select name="membership_id" required>
+              <option value="">Seleccione...</option>
+              <?php foreach($memberships as $ms): ?>
+                <option value="<?= $ms['id'] ?>" <?= $editing && $ms['id'] == $editData['membership_id'] ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($ms['name']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>Fecha de Inicio *</label>
+            <input type="date" name="start_date" value="<?= $editing ? $editData['start_date'] : '' ?>" required>
+          </div>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">
+          <i class="fas fa-save"></i> <?= $editing ? 'Actualizar Miembro' : 'Guardar Miembro' ?>
+        </button>
+        
+        <?php if ($editing): ?>
+          <a href="index.php" class="btn btn-danger" style="margin-left: 10px;">
+            <i class="fas fa-times"></i> Cancelar
+          </a>
+        <?php endif; ?>
+      </form>
+    </div>
+
+    <!-- Listado de miembros -->
+    <div class="card">
+      <h2 class="card-title"><i class="fas fa-users"></i> Listado de Miembros</h2>
+      
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Contacto</th>
+              <th>Membresía</th>
+              <th>Estado</th>
+              <th>Vencimiento</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach($members as $m): 
+              $status = '';
+              $today = new DateTime();
+              $end_date = new DateTime($m['end_date']);
+              $interval = $today->diff($end_date);
+              
+              if ($end_date < $today) {
+                $status = 'status-expired';
+                $status_text = 'Vencido';
+              } elseif ($interval->days <= 7) {
+                $status = 'status-expiring';
+                $status_text = 'Por vencer';
+              } else {
+                $status = 'status-active';
+                $status_text = 'Activo';
+              }
+            ?>
+              <tr>
+                <td><?= htmlspecialchars($m['id']) ?></td>
+                <td><?= htmlspecialchars($m['name']) ?></td>
+                <td>
+                  <div><?= htmlspecialchars($m['phone']) ?></div>
+                  <small style="color: var(--gray);"><?= htmlspecialchars($m['email']) ?></small>
+                </td>
+                <td><?= htmlspecialchars($m['membership_name']) ?></td>
+                <td>
+                  <span class="status-badge <?= $status ?>">
+                    <?= $status_text ?>
+                  </span>
+                </td>
+                <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
+                <td>
+                  <div class="actions">
+                    <a href="?edit=<?= $m['id'] ?>" class="btn btn-primary btn-sm">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="?delete=<?= $m['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de eliminar este miembro?')">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    
+    <!-- Sección de membresías por vencer -->
+    <div class="card">
+      <h2 class="card-title"><i class="fas fa-clock"></i> Membresías por Vencer (próximos 7 días)</h2>
+      
+      <div class="table-responsive">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Membresía</th>
+              <th>Días Restantes</th>
+              <th>Fecha Vencimiento</th>
+              <th>Contacto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php 
+            $expiring = $pdo->query("SELECT m.*, ms.name AS membership_name 
+                                    FROM members m 
+                                    JOIN memberships ms ON m.membership_id=ms.id 
+                                    WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                                    ORDER BY end_date ASC")->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach($expiring as $m): 
+              $end_date = new DateTime($m['end_date']);
+              $today = new DateTime();
+              $interval = $today->diff($end_date);
+              $days_left = $interval->days;
+            ?>
+              <tr>
+                <td><?= htmlspecialchars($m['name']) ?></td>
+                <td><?= htmlspecialchars($m['membership_name']) ?></td>
+                <td>
+                  <span class="status-badge status-expiring">
+                    <?= $days_left ?> día<?= $days_left != 1 ? 's' : '' ?>
+                  </span>
+                </td>
+                <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
+                <td>
+                  <a href="tel:<?= htmlspecialchars($m['phone']) ?>" class="btn btn-success btn-sm">
+                    <i class="fas fa-phone"></i> Llamar
+                  </a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+            
+            <?php if (empty($expiring)): ?>
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--success);">
+                  <i class="fas fa-check-circle"></i> No hay membresías por vencer en los próximos 7 días
+                </td>
+              </tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

@@ -64,7 +64,9 @@ if (isset($_GET['delete'])) {
 $memberships = $pdo->query("SELECT * FROM memberships")->fetchAll(PDO::FETCH_ASSOC);
 $members = $pdo->query("SELECT m.*, ms.name AS membership_name
                         FROM members m
-                        JOIN memberships ms ON m.membership_id=ms.id")->fetchAll(PDO::FETCH_ASSOC);
+                        JOIN memberships ms ON m.membership_id=ms.id
+                        ORDER BY m.name ASC
+                        LIMIT $start, $perPage")->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -593,6 +595,35 @@ $pages = ceil($total / $perPage);
             <?php endif; ?>
           </tbody>
         </table>
+        <!-- PAGINACION LISTADO MIEMBROS -->
+         <!-- Paginación -->
+<div class="pagination" style="margin-top: 20px; display: flex; justify-content: center;">
+    <?php if($page > 1): ?>
+        <a href="?page=<?= $page-1 ?>" class="btn btn-sm" style="margin: 0 5px;">
+            <i class="fas fa-chevron-left"></i> Anterior
+        </a>
+    <?php endif; ?>
+    
+    <?php for($i = 1; $i <= $pages; $i++): ?>
+        <a href="?page=<?= $i ?>" class="btn btn-sm <?= $page == $i ? 'btn-primary' : '' ?>" style="margin: 0 2px;">
+            <?= $i ?>
+        </a>
+    <?php endfor; ?>
+    
+    <?php if($page < $pages): ?>
+        <a href="?page=<?= $page+1 ?>" class="btn btn-sm" style="margin: 0 5px;">
+            Siguiente <i class="fas fa-chevron-right"></i>
+        </a>
+    <?php endif; ?>
+</div>
+
+<!-- Mostrando resultados -->
+<div style="text-align: center; margin-top: 10px; color: var(--text-secondary); font-size: 14px;">
+    Mostrando miembros <?= $start+1 ?> - <?= min($start + $perPage, $total) ?> de <?= $total ?> totales
+</div>
+      
+      
+      
       </div>
     </div>
   </div>

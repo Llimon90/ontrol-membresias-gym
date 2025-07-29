@@ -1,8 +1,8 @@
 <?php
 define('DB_SERVER','localhost');
-define('DB_USERNAME','');
+define('DB_USERNAME','u179371012_231');
 define('DB_PASSWORD','');
-define('DB_NAME','');
+define('DB_NAME','u179371012_gimnasio');
 
 try {
   $pdo = new PDO("mysql:host=".DB_SERVER.";dbname=".DB_NAME.";charset=utf8", DB_USERNAME, DB_PASSWORD);

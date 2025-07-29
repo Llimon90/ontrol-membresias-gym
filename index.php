@@ -72,7 +72,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Gimnasio | Gestión de Miembros</title>
+  <title>Dashboard Administrador | Gestión de Miembros</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     :root {
@@ -361,7 +361,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
 <body>
   <div class="container">
     <div class="header">
-      <h1><i class="fas fa-dumbbell"></i> Dashboard Gimnasio</h1>
+      <h1><i class="fas fa-dumbbell"></i> GYM 23:1</h1>
       <div>
         <span class="status-badge status-active">
           <i class="fas fa-circle"></i> <?= date('d/m/Y H:i') ?>

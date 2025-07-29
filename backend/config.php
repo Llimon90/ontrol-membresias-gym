@@ -1,7 +1,7 @@
 <?php
 define('DB_SERVER','localhost');
 define('DB_USERNAME','u179371012_231');
-define('DB_PASSWORD','');
+define('DB_PASSWORD','Gym2025*2025');
 define('DB_NAME','u179371012_gimnasio');
 
 try {

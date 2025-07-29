@@ -459,7 +459,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
         <table>
           <thead>
             <tr>
-              <th>ID</th>
+              
               <th>Nombre</th>
               <th>Contacto</th>
               <th>Membresía</th>

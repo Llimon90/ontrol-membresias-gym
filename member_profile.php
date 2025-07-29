@@ -66,8 +66,8 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       --gray: #6c757d;
       --bg-dark: #1a1a2e;
       --bg-card: #16213e;
-      --text-primary: #7a6b6bff;
-      --text-secondary: #6e6363ff;
+      --text-primary: #ffffff;
+      --text-secondary: #e2e2e2;
     }
 
     * {

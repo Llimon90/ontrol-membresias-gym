@@ -297,6 +297,69 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         grid-template-columns: 1fr;
       }
     }
+
+    /* Avatar circular */
+.profile-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 32px;
+  font-weight: bold;
+  margin-right: 20px;
+}
+
+/* Tarjetas de información */
+.info-card {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 15px;
+  transition: transform 0.3s ease;
+}
+
+.info-card:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Pestañas de perfil */
+.profile-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 20px;
+}
+
+.profile-tab {
+  padding: 10px 20px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s;
+}
+
+.profile-tab.active {
+  border-bottom: 2px solid var(--success);
+  color: var(--success);
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .profile-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .profile-avatar {
+    margin: 0 auto 15px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+}
   </style>
 </head>
 <body>

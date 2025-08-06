@@ -398,128 +398,144 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
       </div>
     </div>
 
-    <!-- Formulario de miembros -->
-    <div class="card">
-      <h2 class="card-title"><i class="fas fa-user-plus"></i> <?= $editing ? 'Editar Miembro' : 'Agregar Nuevo Miembro' ?></h2>
-      <?php if ($error): ?>
-        <div class="text-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
-      <?php endif; ?>
-      
-      <form method="post">
-        <input type="hidden" name="edit_id" value="<?= $editing ? $editId : '' ?>">
-        <div class="form-grid">
-          <div class="form-group">
-            <label>Nombre Completo *</label>
-            <input name="name" value="<?= $editing ? htmlspecialchars($editData['name']) : '' ?>" required>
-          </div>
-          
-          <div class="form-group">
-            <label>Email</label>
-            <input type="email" name="email" value="<?= $editing ? htmlspecialchars($editData['email']) : '' ?>">
-          </div>
-          
-          <div class="form-group">
-            <label>Teléfono *</label>
-            <input name="phone" value="<?= $editing ? htmlspecialchars($editData['phone']) : '' ?>" required>
-          </div>
-          
-          <div class="form-group">
-            <label>Tipo de Membresía *</label>
-            <select name="membership_id" required>
-              <option value="">Seleccione...</option>
-              <?php foreach($memberships as $ms): ?>
-                <option value="<?= $ms['id'] ?>" <?= $editing && $ms['id'] == $editData['membership_id'] ? 'selected' : '' ?>>
-                  <?= htmlspecialchars($ms['name']) ?>
-                </option>
-              <?php endforeach; ?>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label>Fecha de Inicio *</label>
-            <input type="date" name="start_date" value="<?= $editing ? $editData['start_date'] : '' ?>" required>
-          </div>
+   <!-- Formulario de miembros (plegable) -->
+<div class="card">
+  <div class="card-header" onclick="toggleSection('form-section', 'form-icon')" style="cursor: pointer;">
+    <h2 class="card-title">
+      <i class="fas fa-user-plus"></i> <?= $editing ? 'Editar Miembro' : 'Agregar Nuevo Miembro' ?>
+      <i class="fas fa-chevron-down" id="form-icon"></i>
+    </h2>
+  </div>
+  
+  <div id="form-section">
+    <?php if ($error): ?>
+      <div class="text-error"><i class="fas fa-exclamation-circle"></i> <?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+    
+    <form method="post">
+      <input type="hidden" name="edit_id" value="<?= $editing ? $editId : '' ?>">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Nombre Completo *</label>
+          <input name="name" value="<?= $editing ? htmlspecialchars($editData['name']) : '' ?>" required>
         </div>
         
-        <button type="submit" class="btn btn-primary">
-          <i class="fas fa-save"></i> <?= $editing ? 'Actualizar Miembro' : 'Guardar Miembro' ?>
-        </button>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" value="<?= $editing ? htmlspecialchars($editData['email']) : '' ?>">
+        </div>
         
-        <?php if ($editing): ?>
-          <a href="index.php" class="btn btn-danger" style="margin-left: 10px;">
-            <i class="fas fa-times"></i> Cancelar
-          </a>
-        <?php endif; ?>
-      </form>
-    </div>
-
-    <!-- Listado de miembros -->
-    <div class="card">
-      <h2 class="card-title"><i class="fas fa-users"></i> Listado de Miembros</h2>
-      
-      <div class="table-responsive">
-        <table>
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Contacto</th>
-              <th>Membresía</th>
-              <th>Estado</th>
-              <th>Vencimiento</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach($members as $m): 
-              $status = '';
-              $today = new DateTime();
-              $end_date = new DateTime($m['end_date']);
-              $interval = $today->diff($end_date);
-              
-              if ($end_date < $today) {
-                $status = 'status-expired';
-                $status_text = 'Vencido';
-              } elseif ($interval->days <= 7) {
-                $status = 'status-expiring';
-                $status_text = 'Por vencer';
-              } else {
-                $status = 'status-active';
-                $status_text = 'Activo';
-              }
-            ?>
-              <tr>
-                <td>
-                  <a href="member_profile.php?id=<?= $m['id'] ?>" style="color: var(--success); text-decoration: none;">
-                    <i class="fas fa-user"></i> <?= htmlspecialchars($m['name']) ?>
-                  </a>
-                </td>
-                <td>
-                  <div><?= htmlspecialchars($m['phone']) ?></div>
-                  <small style="color: var(--gray);"><?= htmlspecialchars($m['email']) ?></small>
-                </td>
-                <td><?= htmlspecialchars($m['membership_name']) ?></td>
-                <td>
-                  <span class="status-badge <?= $status ?>">
-                    <?= $status_text ?>
-                  </span>
-                </td>
-                <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
-                <td>
-                  <div class="actions">
-                    <a href="?edit=<?= $m['id'] ?>" class="btn btn-primary btn-sm">
-                      <i class="fas fa-edit"></i>
-                    </a>
-                    <a href="?delete=<?= $m['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de eliminar este miembro?')">
-                      <i class="fas fa-trash"></i>
-                    </a>
-                  </div>
-                </td>
-              </tr>
+        <div class="form-group">
+          <label>Teléfono *</label>
+          <input name="phone" value="<?= $editing ? htmlspecialchars($editData['phone']) : '' ?>" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Tipo de Membresía *</label>
+          <select name="membership_id" required>
+            <option value="">Seleccione...</option>
+            <?php foreach($memberships as $ms): ?>
+              <option value="<?= $ms['id'] ?>" <?= $editing && $ms['id'] == $editData['membership_id'] ? 'selected' : '' ?>>
+                <?= htmlspecialchars($ms['name']) ?>
+              </option>
             <?php endforeach; ?>
-          </tbody>
-        </table>
+            </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Fecha de Inicio *</label>
+          <input type="date" name="start_date" value="<?= $editing ? $editData['start_date'] : '' ?>" required>
+        </div>
       </div>
+      
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> <?= $editing ? 'Actualizar Miembro' : 'Guardar Miembro' ?>
+      </button>
+      
+      <?php if ($editing): ?>
+        <a href="index.php" class="btn btn-danger" style="margin-left: 10px;">
+          <i class="fas fa-times"></i> Cancelar
+        </a>
+      <?php endif; ?>
+    </form>
+  </div>
+</div>
+
+<!-- Listado de miembros (plegable) -->
+<div class="card">
+  <div class="card-header" onclick="toggleSection('list-section', 'list-icon')" style="cursor: pointer;">
+    <h2 class="card-title">
+      <i class="fas fa-users"></i> Listado de Miembros
+      <i class="fas fa-chevron-down" id="list-icon"></i>
+    </h2>
+  </div>
+  
+  <div id="list-section">
+    <div class="table-responsive">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Contacto</th>
+            <th>Membresía</th>
+            <th>Estado</th>
+            <th>Vencimiento</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php foreach($members as $m): 
+            $status = '';
+            $today = new DateTime();
+            $end_date = new DateTime($m['end_date']);
+            $interval = $today->diff($end_date);
+            
+            if ($end_date < $today) {
+              $status = 'status-expired';
+              $status_text = 'Vencido';
+            } elseif ($interval->days <= 7) {
+              $status = 'status-expiring';
+              $status_text = 'Por vencer';
+            } else {
+              $status = 'status-active';
+              $status_text = 'Activo';
+            }
+          ?>
+            <tr>
+              <td>
+                <a href="member_profile.php?id=<?= $m['id'] ?>" style="color: var(--success); text-decoration: none;">
+                  <i class="fas fa-user"></i> <?= htmlspecialchars($m['name']) ?>
+                </a>
+              </td>
+              <td>
+                <div><?= htmlspecialchars($m['phone']) ?></div>
+                <small style="color: var(--gray);"><?= htmlspecialchars($m['email']) ?></small>
+              </td>
+              <td><?= htmlspecialchars($m['membership_name']) ?></td>
+              <td>
+                <span class="status-badge <?= $status ?>">
+                  <?= $status_text ?>
+                </span>
+              </td>
+              <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
+              <td>
+                <div class="actions">
+                  <a href="?edit=<?= $m['id'] ?>" class="btn btn-primary btn-sm">
+                    <i class="fas fa-edit"></i>
+                  </a>
+                  <a href="?delete=<?= $m['id'] ?>" class="btn btn-danger btn-sm" onclick="return confirm('¿Estás seguro de eliminar este miembro?')">
+                    <i class="fas fa-trash"></i>
+                  </a>
+                </div>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+        </tbody>
+      </table>
     </div>
+  </div>
+</div>
+
     
 <!-- Sección de membresías por vencer (plegable) -->
 <div class="card">

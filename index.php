@@ -521,198 +521,122 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
       </div>
     </div>
     
-  <!-- Sección de membresías por vencer (plegable) -->
-<div class="card">
-  <div class="card-header" onclick="toggleSection('expiring-section')" style="cursor: pointer;">
-    <h2 class="card-title">
-      <i class="fas fa-clock"></i> Membresías por Vencer (próximos 7 días)
-      <i class="fas fa-chevron-down toggle-icon" id="expiring-icon"></i>
-    </h2>
-  </div>
-  
-  <div id="expiring-section" class="card-content">
-    <div class="table-responsive">
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre</th>
-            <th>Membresía</th>
-            <th>Días Restantes</th>
-            <th>Fecha Vencimiento</th>
-            <th>Contacto</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php 
-          $expiring = $pdo->query("SELECT m.*, ms.name AS membership_name 
-                                  FROM members m 
-                                  JOIN memberships ms ON m.membership_id=ms.id 
-                                  WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                                  ORDER BY end_date ASC")->fetchAll(PDO::FETCH_ASSOC);
-          
-          foreach($expiring as $m): 
-            $end_date = new DateTime($m['end_date']);
-            $today = new DateTime();
-            $interval = $today->diff($end_date);
-            $days_left = $interval->days;
-          ?>
+    <!-- Sección de membresías por vencer -->
+    <div class="card">
+      <h2 class="card-title"><i class="fas fa-clock"></i> Membresías por Vencer (próximos 7 días)</h2>
+      
+      <div class="table-responsive">
+        <table>
+          <thead>
             <tr>
-              <td><?= htmlspecialchars($m['name']) ?></td>
-              <td><?= htmlspecialchars($m['membership_name']) ?></td>
-              <td>
-                <span class="status-badge status-expiring">
-                  <?= $days_left ?> día<?= $days_left != 1 ? 's' : '' ?>
-                </span>
-              </td>
-              <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
-              <td>
-                <a href="tel:<?= htmlspecialchars($m['phone']) ?>" class="btn btn-success btn-sm">
-                  <i class="fas fa-phone"></i> Llamar
-                </a>
-              </td>
+              <th>Nombre</th>
+              <th>Membresía</th>
+              <th>Días Restantes</th>
+              <th>Fecha Vencimiento</th>
+              <th>Contacto</th>
             </tr>
-          <?php endforeach; ?>
-          
-          <?php if (empty($expiring)): ?>
-            <tr>
-              <td colspan="5" style="text-align: center; color: var(--success);">
-                <i class="fas fa-check-circle"></i> No hay membresías por vencer en los próximos 7 días
-              </td>
-            </tr>
-          <?php endif; ?>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <?php 
+            $expiring = $pdo->query("SELECT m.*, ms.name AS membership_name 
+                                    FROM members m 
+                                    JOIN memberships ms ON m.membership_id=ms.id 
+                                    WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                                    ORDER BY end_date ASC")->fetchAll(PDO::FETCH_ASSOC);
+            
+            foreach($expiring as $m): 
+              $end_date = new DateTime($m['end_date']);
+              $today = new DateTime();
+              $interval = $today->diff($end_date);
+              $days_left = $interval->days;
+            ?>
+              <tr>
+                <td><?= htmlspecialchars($m['name']) ?></td>
+                <td><?= htmlspecialchars($m['membership_name']) ?></td>
+                <td>
+                  <span class="status-badge status-expiring">
+                    <?= $days_left ?> día<?= $days_left != 1 ? 's' : '' ?>
+                  </span>
+                </td>
+                <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
+                <td>
+                  <a href="tel:<?= htmlspecialchars($m['phone']) ?>" class="btn btn-success btn-sm">
+                    <i class="fas fa-phone"></i> Llamar
+                  </a>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+            
+            <?php if (empty($expiring)): ?>
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--success);">
+                  <i class="fas fa-check-circle"></i> No hay membresías por vencer en los próximos 7 días
+                </td>
+              </tr>
+            <?php endif; ?>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Sección de membresías vencidas (plegable) -->
+  <!-- Sección de membresías vencidas -->
 <div class="card">
-  <div class="card-header" onclick="toggleSection('expired-section')" style="cursor: pointer;">
-    <h2 class="card-title">
-      <i class="fas fa-exclamation-triangle"></i> Membresías Vencidas
-      <i class="fas fa-chevron-down toggle-icon" id="expired-icon"></i>
-    </h2>
-  </div>
+  <h2 class="card-title"><i class="fas fa-exclamation-triangle"></i> Membresías Vencidas</h2>
   
-  <div id="expired-section" class="card-content">
-    <div class="table-responsive">
-      <table>
-        <thead>
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Membresía</th>
+          <th>Días de Vencimiento</th>
+          <th>Fecha Vencimiento</th>
+          <th>Contacto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php 
+        $expired = $pdo->query("SELECT m.*, ms.name AS membership_name 
+                              FROM members m 
+                              JOIN memberships ms ON m.membership_id=ms.id 
+                              WHERE end_date < CURDATE()
+                              ORDER BY end_date DESC")->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach($expired as $m): 
+          $end_date = new DateTime($m['end_date']);
+          $today = new DateTime();
+          $interval = $today->diff($end_date);
+          $days_expired = $interval->days;
+        ?>
           <tr>
-            <th>Nombre</th>
-            <th>Membresía</th>
-            <th>Días de Vencimiento</th>
-            <th>Fecha Vencimiento</th>
-            <th>Contacto</th>
+            <td><?= htmlspecialchars($m['name']) ?></td>
+            <td><?= htmlspecialchars($m['membership_name']) ?></td>
+            <td>
+              <span class="status-badge status-expired">
+                <?= $days_expired ?> día<?= $days_expired != 1 ? 's' : '' ?>
+              </span>
+            </td>
+            <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
+            <td>
+              <a href="tel:<?= htmlspecialchars($m['phone']) ?>" class="btn btn-success btn-sm">
+                <i class="fas fa-phone"></i> Llamar
+              </a>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          <?php 
-          $expired = $pdo->query("SELECT m.*, ms.name AS membership_name 
-                                FROM members m 
-                                JOIN memberships ms ON m.membership_id=ms.id 
-                                WHERE end_date < CURDATE()
-                                ORDER BY end_date DESC")->fetchAll(PDO::FETCH_ASSOC);
-          
-          foreach($expired as $m): 
-            $end_date = new DateTime($m['end_date']);
-            $today = new DateTime();
-            $interval = $today->diff($end_date);
-            $days_expired = $interval->days;
-          ?>
-            <tr>
-              <td><?= htmlspecialchars($m['name']) ?></td>
-              <td><?= htmlspecialchars($m['membership_name']) ?></td>
-              <td>
-                <span class="status-badge status-expired">
-                  <?= $days_expired ?> día<?= $days_expired != 1 ? 's' : '' ?>
-                </span>
-              </td>
-              <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
-              <td>
-                <a href="tel:<?= htmlspecialchars($m['phone']) ?>" class="btn btn-success btn-sm">
-                  <i class="fas fa-phone"></i> Llamar
-                </a>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-          
-          <?php if (empty($expired)): ?>
-            <tr>
-              <td colspan="5" style="text-align: center; color: var(--success);">
-                <i class="fas fa-check-circle"></i> No hay membresías vencidas
-              </td>
-            </tr>
-          <?php endif; ?>
-        </tbody>
-      </table>
-    </div>
+        <?php endforeach; ?>
+        
+        <?php if (empty($expired)): ?>
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--success);">
+              <i class="fas fa-check-circle"></i> No hay membresías vencidas
+            </td>
+          </tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
   </div>
 </div>
-
-<!-- JavaScript para el funcionamiento de las secciones plegables -->
-<script>
-function toggleSection(sectionId) {
-  const section = document.getElementById(sectionId);
-  const icon = document.getElementById(sectionId.replace('-section', '-icon'));
-  
-  if (section.style.display === 'none') {
-    section.style.display = 'block';
-    icon.classList.remove('fa-chevron-up');
-    icon.classList.add('fa-chevron-down');
-  } else {
-    section.style.display = 'none';
-    icon.classList.remove('fa-chevron-down');
-    icon.classList.add('fa-chevron-up');
-  }
-}
-
-// Opcional: Inicializar las secciones como visibles o plegadas por defecto
-document.addEventListener('DOMContentLoaded', function() {
-  // Para iniciar todas plegadas:
-  // document.querySelectorAll('.card-content').forEach(el => el.style.display = 'none');
-  // document.querySelectorAll('.toggle-icon').forEach(el => el.classList.replace('fa-chevron-down', 'fa-chevron-up'));
-  
-  // Para iniciar todas desplegadas (por defecto):
-  document.querySelectorAll('.card-content').forEach(el => el.style.display = 'block');
-});
-</script>
-
-<!-- Estilos adicionales -->
-<style>
-.card-header {
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-bottom: 1px solid #eee;
-}
-
-.card-header:hover {
-  background-color: #e9ecef;
-}
-
-.toggle-icon {
-  float: right;
-  transition: transform 0.3s ease;
-}
-
-.status-badge {
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.status-expiring {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-expired {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-</style>
 
   <!-- Sección de Saldo y Pagos -->
 <div class="card">

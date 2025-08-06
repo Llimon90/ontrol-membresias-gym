@@ -695,7 +695,7 @@ function toggleSection(sectionId, iconId) {
         <button class="tab-btn" onclick="openTab(event, 'products-tab')">Productos/Servicios</button>
     </div>
     
-    <!-- Tab de Saldos - Versión Responsive -->
+    <!-- Tab de Saldos -->
     <div id="balance-tab" class="tab-content" style="display: block;">
         <div class="table-responsive-container">
             <table class="responsive-table">
@@ -732,7 +732,7 @@ function toggleSection(sectionId, iconId) {
         </div>
     </div>
     
-    <!-- Tab de Registrar Pago - Versión Responsive -->
+    <!-- Tab de Registrar Pago -->
     <div id="payment-tab" class="tab-content" style="display: none;">
         <form id="payment-form" method="post" action="process_payment.php">
             <div class="responsive-form-grid">
@@ -759,7 +759,9 @@ function toggleSection(sectionId, iconId) {
                     <label>Producto/Servicio</label>
                     <select name="product_id" id="product-select">
                         <option value="">Seleccionar producto...</option>
-                        <?php foreach($products as $p): ?>
+                        <?php 
+                        $products = $pdo->query("SELECT * FROM gym_products WHERE is_active = TRUE")->fetchAll(PDO::FETCH_ASSOC);
+                        foreach($products as $p): ?>
                         <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>">
                             <?= htmlspecialchars($p['name']) ?> ($<?= number_format($p['price'], 2) ?>)
                         </option>
@@ -796,7 +798,7 @@ function toggleSection(sectionId, iconId) {
         </form>
     </div>
     
-    <!-- Tab de Productos/Servicios - Versión Responsive -->
+    <!-- Tab de Productos/Servicios -->
     <div id="products-tab" class="tab-content" style="display: none;">
         <div class="responsive-table-controls">
             <button class="btn btn-success" onclick="showProductModal()">
@@ -816,7 +818,10 @@ function toggleSection(sectionId, iconId) {
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($products as $p): ?>
+                    <?php 
+                    $allProducts = $pdo->query("SELECT * FROM gym_products ORDER BY name ASC")->fetchAll(PDO::FETCH_ASSOC);
+                    foreach($allProducts as $p): 
+                    ?>
                     <tr>
                         <td data-label="Nombre"><?= htmlspecialchars($p['name']) ?></td>
                         <td data-label="Descripción"><?= htmlspecialchars($p['description']) ?></td>
@@ -828,7 +833,7 @@ function toggleSection(sectionId, iconId) {
                         </td>
                         <td data-label="Acciones" class="actions-cell">
                             <div class="action-buttons">
-                                <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
+                                <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>, '<?= htmlspecialchars(addslashes($p['name'])) ?>', '<?= htmlspecialchars(addslashes($p['description'])) ?>', <?= $p['price'] ?>, <?= $p['is_active'] ? 'true' : 'false' ?>)">
                                     <i class="fas fa-edit"></i> <span class="action-text">Editar</span>
                                 </button>
                                 <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
@@ -844,147 +849,106 @@ function toggleSection(sectionId, iconId) {
     </div>
 </div>
 
-<!-- CSS para hacer responsive las tablas -->
-<style>
-/* Contenedor responsive para tablas */
-.table-responsive-container {
-    width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    margin-bottom: 20px;
-}
+<!-- Modal para Productos -->
+<div id="productModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('productModal')">&times;</span>
+        <h3 id="product-modal-title">Agregar Producto/Servicio</h3>
+        <form id="product-form" method="post" action="process_product.php">
+            <input type="hidden" name="product_id" id="product-id" value="">
+            
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" name="name" id="product-name" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea name="description" id="product-description" rows="3"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Precio *</label>
+                <input type="number" name="price" id="product-price" step="0.01" min="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_active" id="product-active" checked> Activo
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Guardar Producto
+            </button>
+        </form>
+    </div>
+</div>
 
-/* Estilos para tablas responsive */
-.responsive-table {
-    width: 100%;
-    border-collapse: collapse;
-    min-width: 600px; /* Ancho mínimo antes de que aparezca el scroll */
-}
-
-/* Estilos para celdas en móviles */
-@media screen and (max-width: 768px) {
-    .responsive-table {
-        min-width: 100%;
-    }
-    
-    .responsive-table thead {
-        display: none;
-    }
-    
-    .responsive-table tr {
-        display: block;
-        margin-bottom: 15px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-    }
-    
-    .responsive-table td {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 12px;
-        text-align: right;
-        border-bottom: 1px solid #eee;
-    }
-    
-    .responsive-table td:before {
-        content: attr(data-label);
-        font-weight: bold;
-        margin-right: 15px;
-        text-align: left;
-    }
-    
-    .actions-cell {
-        display: block;
-    }
-    
-    .action-buttons {
-        display: flex;
-        justify-content: flex-end;
-        gap: 5px;
-    }
-    
-    .action-text {
-        display: none;
-    }
-    
-    /* Formulario responsive */
-    .responsive-form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 15px;
-    }
-    
-    .full-width {
-        grid-column: 1 / -1;
-    }
-    
-    .form-submit {
-        grid-column: 1 / -1;
-        text-align: right;
-    }
-}
-
-/* Estilos para pantallas más grandes */
-@media screen and (min-width: 769px) {
-    .responsive-table {
-        display: table;
-    }
-    
-    .responsive-table thead {
-        display: table-header-group;
-    }
-    
-    .responsive-table tr {
-        display: table-row;
-    }
-    
-    .responsive-table td, 
-    .responsive-table th {
-        display: table-cell;
-        padding: 8px 12px;
-        text-align: left;
-    }
-    
-    .action-text {
-        display: inline;
-    }
-    
-    .responsive-form-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 15px;
-    }
-    
-    .form-group {
-        margin-bottom: 15px;
-    }
-}
-
-/* Mejoras generales para los tabs */
-.tabs {
-    display: flex;
-    gap: 5px;
-    padding-bottom: 5px;
-}
-
-.tab-btn {
-    padding: 8px 15px;
-    background: #f1f1f1;
-    border: none;
-    border-radius: 4px 4px 0 0;
-    cursor: pointer;
-    white-space: nowrap;
-}
-
-.tab-btn.active {
-    background: var(--primary);
-    color: white;
-}
-</style>
-
-<!-- JavaScript para funcionalidad responsive -->
+<!-- JavaScript para funcionalidades -->
 <script>
+// Función para mostrar el modal de producto (agregar o editar)
+function showProductModal(productId = 0, name = '', description = '', price = 0, isActive = true) {
+    const modal = document.getElementById('productModal');
+    const title = document.getElementById('product-modal-title');
+    
+    if (productId > 0) {
+        title.textContent = 'Editar Producto';
+        document.getElementById('product-id').value = productId;
+        document.getElementById('product-name').value = name;
+        document.getElementById('product-description').value = description;
+        document.getElementById('product-price').value = price;
+        document.getElementById('product-active').checked = isActive;
+    } else {
+        title.textContent = 'Agregar Producto/Servicio';
+        document.getElementById('product-id').value = '';
+        document.getElementById('product-form').reset();
+    }
+    
+    modal.style.display = 'block';
+}
+
+// Función para editar producto (llena el modal con los datos)
+function editProduct(productId, name, description, price, isActive) {
+    showProductModal(productId, name, description, price, isActive);
+}
+
+// Función para confirmar eliminación de producto
+function confirmDeleteProduct(productId) {
+    if (confirm('¿Estás seguro de eliminar este producto? Esta acción no se puede deshacer.')) {
+        // Redireccionar para eliminar el producto
+        window.location.href = 'delete_product.php?id=' + productId;
+    }
+}
+
+// Función para cerrar modales
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+// Cerrar modales al hacer clic fuera
+window.onclick = function(event) {
+    if (event.target.className === 'modal') {
+        event.target.style.display = 'none';
+    }
+}
+
+// Función para cambiar entre tabs
+function openTab(evt, tabName) {
+    const tabContents = document.getElementsByClassName('tab-content');
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].style.display = 'none';
+    }
+    
+    const tabButtons = document.getElementsByClassName('tab-btn');
+    for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].className = tabButtons[i].className.replace(' active', '');
+    }
+    
+    document.getElementById(tabName).style.display = 'block';
+    evt.currentTarget.className += ' active';
+}
+
 // Función para mostrar/ocultar campo de producto según tipo de pago
 function toggleProductField(paymentType) {
     const productGroup = document.getElementById('product-group');
@@ -1006,172 +970,10 @@ function toggleProductField(paymentType) {
         productSelect.value = '';
     }
 }
-
-// Función para cambiar entre tabs
-function openTab(evt, tabName) {
-    const tabContents = document.getElementsByClassName('tab-content');
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = 'none';
-    }
-    
-    const tabButtons = document.getElementsByClassName('tab-btn');
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].className = tabButtons[i].className.replace(' active', '');
-    }
-    
-    document.getElementById(tabName).style.display = 'block';
-    evt.currentTarget.className += ' active';
-}
 </script>
 
-<!-- Modal para recarga rápida -->
-<div id="quickPaymentModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('quickPaymentModal')">&times;</span>
-        <h3>Recargar saldo a <span id="member-name"></span></h3>
-        <form id="quick-payment-form" method="post" action="process_payment.php">
-            <input type="hidden" name="member_id" id="quick-member-id">
-            <input type="hidden" name="payment_type" value="recarga">
-            
-            <div class="form-group">
-                <label>Monto *</label>
-                <input type="number" name="amount" step="0.01" min="0" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Método de Pago *</label>
-                <select name="payment_method" required>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
-                    <option value="transferencia">Transferencia</option>
-                </select>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-money-bill-wave"></i> Recargar Saldo
-            </button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal para productos -->
-<div id="productModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('productModal')">&times;</span>
-        <h3 id="product-modal-title">Agregar Producto/Servicio</h3>
-        <form id="product-form" method="post" action="process_product.php">
-            <input type="hidden" name="product_id" id="product-id">
-            
-            <div class="form-group">
-                <label>Nombre *</label>
-                <input type="text" name="name" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Descripción</label>
-                <textarea name="description" rows="3"></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Precio *</label>
-                <input type="number" name="price" step="0.01" min="0" required>
-            </div>
-            
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="is_active" checked> Activo
-                </label>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Guardar Producto
-            </button>
-        </form>
-    </div>
-</div>
-
-<script>
-// Funciones para las pestañas
-function openTab(evt, tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = "none";
-    }
-    
-    const tabButtons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].className = tabButtons[i].className.replace(" active", "");
-    }
-    
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-}
-
-// Mostrar/ocultar campo de productos según tipo de pago
-document.querySelector('select[name="payment_type"]').addEventListener('change', function() {
-    const productGroup = document.getElementById('product-group');
-    productGroup.style.display = this.value === 'producto' ? 'block' : 'none';
-    
-    // Si selecciona producto, actualizar el monto automáticamente
-    if (this.value === 'producto') {
-        document.querySelector('select[name="product_id"]').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value) {
-                document.querySelector('input[name="amount"]').value = selectedOption.getAttribute('data-price');
-            }
-        });
-    }
-});
-
-// Modal para recarga rápida
-function showPaymentForm(memberId, memberName) {
-    document.getElementById('quick-member-id').value = memberId;
-    document.getElementById('member-name').textContent = memberName;
-    document.getElementById('quickPaymentModal').style.display = 'block';
-}
-
-// Modal para productos
-function showProductModal(productId = 0) {
-    const modal = document.getElementById('productModal');
-    const title = document.getElementById('product-modal-title');
-    
-    if (productId > 0) {
-        // Aquí deberías hacer una llamada AJAX para obtener los datos del producto
-        // y rellenar el formulario, o pasar los datos de otra forma
-        title.textContent = 'Editar Producto';
-        document.getElementById('product-id').value = productId;
-        // Ejemplo de cómo rellenar (deberías obtener los datos reales):
-        // document.querySelector('#product-form input[name="name"]').value = 'Nombre del producto';
-    } else {
-        title.textContent = 'Agregar Producto/Servicio';
-        document.getElementById('product-id').value = '';
-        document.getElementById('product-form').reset();
-    }
-    
-    modal.style.display = 'block';
-}
-
-function closeModal(modalId) {
-    document.getElementById(modalId).style.display = 'none';
-}
-
-function confirmDeleteProduct(productId) {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-        // Aquí deberías hacer una llamada AJAX o redireccionar para eliminar
-        window.location.href = 'delete_product.php?id=' + productId;
-    }
-}
-
-// Cerrar modales al hacer clic fuera
-window.onclick = function(event) {
-    if (event.target.className === 'modal') {
-        event.target.style.display = 'none';
-    }
-}
-</script>
-
+<!-- CSS para modales -->
 <style>
-/* Estilos para los modales */
 .modal {
     display: none;
     position: fixed;
@@ -1205,36 +1007,65 @@ window.onclick = function(event) {
     color: var(--text-primary);
 }
 
-/* Estilos para las pestañas */
-.tabs {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 20px;
+.form-group {
+    margin-bottom: 15px;
 }
 
-.tab-btn {
-    background: none;
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="number"],
+.form-group input[type="date"],
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+.btn {
+    padding: 8px 15px;
     border: none;
-    padding: 10px 20px;
+    border-radius: 4px;
     cursor: pointer;
-    color: var(--text-secondary);
-    font-weight: 500;
-    transition: all 0.3s;
+    font-size: 14px;
+    transition: background-color 0.3s;
 }
 
-.tab-btn.active {
-    color: var(--success);
-    border-bottom: 2px solid var(--success);
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
 }
 
-.tab-content {
-    display: none;
-    animation: fadeIn 0.3s;
+.btn-primary:hover {
+    background-color: var(--primary-dark);
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-dark);
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: var(--success-dark);
 }
 </style>
-</body>
-</html>

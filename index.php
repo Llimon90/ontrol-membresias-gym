@@ -580,6 +580,64 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
     </div>
   </div>
 
+  <!-- Sección de membresías vencidas -->
+<div class="card">
+  <h2 class="card-title"><i class="fas fa-exclamation-triangle"></i> Membresías Vencidas</h2>
+  
+  <div class="table-responsive">
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Membresía</th>
+          <th>Días de Vencimiento</th>
+          <th>Fecha Vencimiento</th>
+          <th>Contacto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php 
+        $expired = $pdo->query("SELECT m.*, ms.name AS membership_name 
+                              FROM members m 
+                              JOIN memberships ms ON m.membership_id=ms.id 
+                              WHERE end_date < CURDATE()
+                              ORDER BY end_date DESC")->fetchAll(PDO::FETCH_ASSOC);
+        
+        foreach($expired as $m): 
+          $end_date = new DateTime($m['end_date']);
+          $today = new DateTime();
+          $interval = $today->diff($end_date);
+          $days_expired = $interval->days;
+        ?>
+          <tr>
+            <td><?= htmlspecialchars($m['name']) ?></td>
+            <td><?= htmlspecialchars($m['membership_name']) ?></td>
+            <td>
+              <span class="status-badge status-expired">
+                <?= $days_expired ?> día<?= $days_expired != 1 ? 's' : '' ?>
+              </span>
+            </td>
+            <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
+            <td>
+              <a href="tel:<?= htmlspecialchars($m['phone']) ?>" class="btn btn-success btn-sm">
+                <i class="fas fa-phone"></i> Llamar
+              </a>
+            </td>
+          </tr>
+        <?php endforeach; ?>
+        
+        <?php if (empty($expired)): ?>
+          <tr>
+            <td colspan="5" style="text-align: center; color: var(--success);">
+              <i class="fas fa-check-circle"></i> No hay membresías vencidas
+            </td>
+          </tr>
+        <?php endif; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
   <!-- Sección de Saldo y Pagos -->
 <div class="card">
     <h2 class="card-title"><i class="fas fa-wallet"></i> Gestión de Pagos y Saldos</h2>

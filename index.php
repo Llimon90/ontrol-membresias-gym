@@ -685,59 +685,57 @@ function toggleSection(sectionId, iconId) {
 }
 </script>
 
-  <!-- Sección de Saldo y Pagos -->
+ <!-- Sección de Saldo y Pagos - Versión Responsive -->
 <div class="card">
     <h2 class="card-title"><i class="fas fa-wallet"></i> Gestión de Pagos y Saldos</h2>
     
-    <div class="tabs" style="margin-bottom: 20px;">
+    <div class="tabs" style="margin-bottom: 20px; overflow-x: auto; white-space: nowrap;">
         <button class="tab-btn active" onclick="openTab(event, 'balance-tab')">Saldos</button>
         <button class="tab-btn" onclick="openTab(event, 'payment-tab')">Registrar Pago</button>
         <button class="tab-btn" onclick="openTab(event, 'products-tab')">Productos/Servicios</button>
     </div>
     
-    <!-- Tab de Saldos -->
+    <!-- Tab de Saldos - Versión Responsive -->
     <div id="balance-tab" class="tab-content" style="display: block;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Miembro</th>
-                    <th>Saldo Actual</th>
-                    <th>Última Actualización</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                $balances = $pdo->query("SELECT m.name, mb.balance, mb.last_updated, m.id 
-                                        FROM member_balances mb
-                                        JOIN members m ON mb.member_id = m.id
-                                        ORDER BY mb.last_updated DESC")->fetchAll(PDO::FETCH_ASSOC);
-                
-                foreach($balances as $balance): ?>
-                <tr>
-                    <td><?= htmlspecialchars($balance['name']) ?></td>
-                    <td>$<?= number_format($balance['balance'], 2) ?></td>
-                    <td><?= date('d/m/Y H:i', strtotime($balance['last_updated'])) ?></td>
-                    <td>
-                        <a href="#" onclick="showPaymentForm(<?= $balance['id'] ?>, '<?= htmlspecialchars($balance['name']) ?>')" 
-                           class="btn btn-success btn-sm">
-                            <i class="fas fa-money-bill-wave"></i> Recargar
-                        </a>
-                        <a href="payment_history.php?member_id=<?= $balance['id'] ?>" 
-                           class="btn btn-primary btn-sm">
-                            <i class="fas fa-history"></i> Historial
-                        </a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="table-responsive-container">
+            <table class="responsive-table">
+                <thead>
+                    <tr>
+                        <th>Miembro</th>
+                        <th>Saldo Actual</th>
+                        <th>Última Actualización</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($balances as $balance): ?>
+                    <tr>
+                        <td data-label="Miembro"><?= htmlspecialchars($balance['name']) ?></td>
+                        <td data-label="Saldo">$<?= number_format($balance['balance'], 2) ?></td>
+                        <td data-label="Actualización"><?= date('d/m/Y H:i', strtotime($balance['last_updated'])) ?></td>
+                        <td data-label="Acciones" class="actions-cell">
+                            <div class="action-buttons">
+                                <a href="#" onclick="showPaymentForm(<?= $balance['id'] ?>, '<?= htmlspecialchars($balance['name']) ?>')" 
+                                   class="btn btn-success btn-sm">
+                                    <i class="fas fa-money-bill-wave"></i> <span class="action-text">Recargar</span>
+                                </a>
+                                <a href="payment_history.php?member_id=<?= $balance['id'] ?>" 
+                                   class="btn btn-primary btn-sm">
+                                    <i class="fas fa-history"></i> <span class="action-text">Historial</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
     
-    <!-- Tab de Registrar Pago -->
+    <!-- Tab de Registrar Pago - Versión Responsive -->
     <div id="payment-tab" class="tab-content" style="display: none;">
         <form id="payment-form" method="post" action="process_payment.php">
-            <div class="form-grid">
+            <div class="responsive-form-grid">
                 <div class="form-group">
                     <label>Miembro *</label>
                     <select name="member_id" id="payment-member" required>
@@ -750,7 +748,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Tipo de Pago *</label>
-                    <select name="payment_type" required>
+                    <select name="payment_type" required onchange="toggleProductField(this.value)">
                         <option value="membresia">Membresía</option>
                         <option value="producto">Producto/Servicio</option>
                         <option value="recarga">Recarga de Saldo</option>
@@ -759,11 +757,9 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group" id="product-group" style="display: none;">
                     <label>Producto/Servicio</label>
-                    <select name="product_id">
+                    <select name="product_id" id="product-select">
                         <option value="">Seleccionar producto...</option>
-                        <?php
-                        $products = $pdo->query("SELECT * FROM gym_products WHERE is_active = TRUE")->fetchAll(PDO::FETCH_ASSOC);
-                        foreach($products as $p): ?>
+                        <?php foreach($products as $p): ?>
                         <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>">
                             <?= htmlspecialchars($p['name']) ?> ($<?= number_format($p['price'], 2) ?>)
                         </option>
@@ -773,7 +769,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Monto *</label>
-                    <input type="number" name="amount" step="0.01" min="0" required>
+                    <input type="number" name="amount" id="payment-amount" step="0.01" min="0" required>
                 </div>
                 
                 <div class="form-group">
@@ -786,59 +782,247 @@ function toggleSection(sectionId, iconId) {
                     </select>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group full-width">
                     <label>Referencia/Descripción</label>
                     <input type="text" name="description" placeholder="Ej: Pago mensualidad enero">
                 </div>
             </div>
             
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Registrar Pago
-            </button>
+            <div class="form-submit">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Registrar Pago
+                </button>
+            </div>
         </form>
     </div>
     
-    <!-- Tab de Productos/Servicios -->
+    <!-- Tab de Productos/Servicios - Versión Responsive -->
     <div id="products-tab" class="tab-content" style="display: none;">
-        <button class="btn btn-success" style="margin-bottom: 15px;" onclick="showProductModal()">
-            <i class="fas fa-plus"></i> Agregar Producto/Servicio
-        </button>
+        <div class="responsive-table-controls">
+            <button class="btn btn-success" onclick="showProductModal()">
+                <i class="fas fa-plus"></i> Agregar Producto/Servicio
+            </button>
+        </div>
         
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                    <th>Precio</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach($products as $p): ?>
-                <tr>
-                    <td><?= htmlspecialchars($p['name']) ?></td>
-                    <td><?= htmlspecialchars($p['description']) ?></td>
-                    <td>$<?= number_format($p['price'], 2) ?></td>
-                    <td>
-                        <span class="status-badge <?= $p['is_active'] ? 'status-active' : 'status-expired' ?>">
-                            <?= $p['is_active'] ? 'Activo' : 'Inactivo' ?>
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="table-responsive-container">
+            <table class="responsive-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($products as $p): ?>
+                    <tr>
+                        <td data-label="Nombre"><?= htmlspecialchars($p['name']) ?></td>
+                        <td data-label="Descripción"><?= htmlspecialchars($p['description']) ?></td>
+                        <td data-label="Precio">$<?= number_format($p['price'], 2) ?></td>
+                        <td data-label="Estado">
+                            <span class="status-badge <?= $p['is_active'] ? 'status-active' : 'status-expired' ?>">
+                                <?= $p['is_active'] ? 'Activo' : 'Inactivo' ?>
+                            </span>
+                        </td>
+                        <td data-label="Acciones" class="actions-cell">
+                            <div class="action-buttons">
+                                <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
+                                    <i class="fas fa-edit"></i> <span class="action-text">Editar</span>
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
+                                    <i class="fas fa-trash"></i> <span class="action-text">Eliminar</span>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+
+<!-- CSS para hacer responsive las tablas -->
+<style>
+/* Contenedor responsive para tablas */
+.table-responsive-container {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 20px;
+}
+
+/* Estilos para tablas responsive */
+.responsive-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px; /* Ancho mínimo antes de que aparezca el scroll */
+}
+
+/* Estilos para celdas en móviles */
+@media screen and (max-width: 768px) {
+    .responsive-table {
+        min-width: 100%;
+    }
+    
+    .responsive-table thead {
+        display: none;
+    }
+    
+    .responsive-table tr {
+        display: block;
+        margin-bottom: 15px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+    }
+    
+    .responsive-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        text-align: right;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .responsive-table td:before {
+        content: attr(data-label);
+        font-weight: bold;
+        margin-right: 15px;
+        text-align: left;
+    }
+    
+    .actions-cell {
+        display: block;
+    }
+    
+    .action-buttons {
+        display: flex;
+        justify-content: flex-end;
+        gap: 5px;
+    }
+    
+    .action-text {
+        display: none;
+    }
+    
+    /* Formulario responsive */
+    .responsive-form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+    }
+    
+    .full-width {
+        grid-column: 1 / -1;
+    }
+    
+    .form-submit {
+        grid-column: 1 / -1;
+        text-align: right;
+    }
+}
+
+/* Estilos para pantallas más grandes */
+@media screen and (min-width: 769px) {
+    .responsive-table {
+        display: table;
+    }
+    
+    .responsive-table thead {
+        display: table-header-group;
+    }
+    
+    .responsive-table tr {
+        display: table-row;
+    }
+    
+    .responsive-table td, 
+    .responsive-table th {
+        display: table-cell;
+        padding: 8px 12px;
+        text-align: left;
+    }
+    
+    .action-text {
+        display: inline;
+    }
+    
+    .responsive-form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 15px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+}
+
+/* Mejoras generales para los tabs */
+.tabs {
+    display: flex;
+    gap: 5px;
+    padding-bottom: 5px;
+}
+
+.tab-btn {
+    padding: 8px 15px;
+    background: #f1f1f1;
+    border: none;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.tab-btn.active {
+    background: var(--primary);
+    color: white;
+}
+</style>
+
+<!-- JavaScript para funcionalidad responsive -->
+<script>
+// Función para mostrar/ocultar campo de producto según tipo de pago
+function toggleProductField(paymentType) {
+    const productGroup = document.getElementById('product-group');
+    const productSelect = document.getElementById('product-select');
+    const amountInput = document.getElementById('payment-amount');
+    
+    if (paymentType === 'producto') {
+        productGroup.style.display = 'block';
+        // Auto-seleccionar precio cuando se selecciona producto
+        productSelect.addEventListener('change', function() {
+            if (this.value) {
+                const selectedOption = this.options[this.selectedIndex];
+                const price = selectedOption.getAttribute('data-price');
+                amountInput.value = price;
+            }
+        });
+    } else {
+        productGroup.style.display = 'none';
+        productSelect.value = '';
+    }
+}
+
+// Función para cambiar entre tabs
+function openTab(evt, tabName) {
+    const tabContents = document.getElementsByClassName('tab-content');
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].style.display = 'none';
+    }
+    
+    const tabButtons = document.getElementsByClassName('tab-btn');
+    for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].className = tabButtons[i].className.replace(' active', '');
+    }
+    
+    document.getElementById(tabName).style.display = 'block';
+    evt.currentTarget.className += ' active';
+}
+</script>
 
 <!-- Modal para recarga rápida -->
 <div id="quickPaymentModal" class="modal" style="display: none;">

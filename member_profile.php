@@ -3,8 +3,8 @@ require 'backend/config.php';
 
 $member_id = $_GET['id'] ?? 0;
 
-// Obtener información básica del miembro
-$member = $pdo->prepare("SELECT m.*, ms.name AS membership_name 
+// Obtener información básica del miembro con duración de membresía
+$member = $pdo->prepare("SELECT m.*, ms.name AS membership_name, ms.duration_days 
                         FROM members m 
                         JOIN memberships ms ON m.membership_id = ms.id 
                         WHERE m.id = ?");
@@ -13,6 +13,39 @@ $member = $member->fetch(PDO::FETCH_ASSOC);
 
 if (!$member) {
     header('Location: index.php?error=member_not_found');
+    exit;
+}
+
+// Procesar renovación si se envió el formulario
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) {
+    $today = new DateTime();
+    $duration_days = $member['duration_days'];
+    
+    // Calcular nueva fecha de vencimiento
+    $new_end_date = clone $today;
+    $new_end_date->add(new DateInterval("P{$duration_days}D"));
+    
+    // Actualizar en la base de datos
+    $stmt = $pdo->prepare("UPDATE members SET start_date = ?, end_date = ? WHERE id = ?");
+    $stmt->execute([
+        $today->format('Y-m-d'),
+        $new_end_date->format('Y-m-d'),
+        $member_id
+    ]);
+    
+    // Registrar el pago de renovación
+    $stmt = $pdo->prepare("INSERT INTO payments (member_id, amount, payment_date, payment_type, description) 
+                          VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([
+        $member_id,
+        0, // Monto - ajustar según tu lógica de precios
+        $today->format('Y-m-d H:i:s'),
+        'membresia',
+        'Renovación automática de membresía ' . $member['membership_name']
+    ]);
+    
+    // Redirigir para evitar reenvío del formulario
+    header("Location: member_profile.php?id=$member_id&success=membership_renewed");
     exit;
 }
 
@@ -282,6 +315,54 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       gap: 5px;
     }
 
+    /* Avatar circular */
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 32px;
+      font-weight: bold;
+      margin-right: 20px;
+    }
+
+    /* Tarjetas de información */
+    .info-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      padding: 15px;
+      transition: transform 0.3s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-3px);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Pestañas de perfil */
+    .profile-tabs {
+      display: flex;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .profile-tab {
+      padding: 10px 20px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .profile-tab.active {
+      border-bottom: 2px solid var(--success);
+      color: var(--success);
+    }
+
+    /* Responsive para móviles */
     @media (max-width: 768px) {
       .profile-header {
         flex-direction: column;
@@ -289,77 +370,13 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       }
       
       .profile-avatar {
-        margin-right: 0;
-        margin-bottom: 15px;
+        margin: 0 auto 15px;
       }
       
       .info-grid {
         grid-template-columns: 1fr;
       }
     }
-
-    /* Avatar circular */
-.profile-avatar {
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  background-color: var(--primary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 32px;
-  font-weight: bold;
-  margin-right: 20px;
-}
-
-/* Tarjetas de información */
-.info-card {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 8px;
-  padding: 15px;
-  transition: transform 0.3s ease;
-}
-
-.info-card:hover {
-  transform: translateY(-3px);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Pestañas de perfil */
-.profile-tabs {
-  display: flex;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 20px;
-}
-
-.profile-tab {
-  padding: 10px 20px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-  transition: all 0.3s;
-}
-
-.profile-tab.active {
-  border-bottom: 2px solid var(--success);
-  color: var(--success);
-}
-
-/* Responsive para móviles */
-@media (max-width: 768px) {
-  .profile-header {
-    flex-direction: column;
-    text-align: center;
-  }
-  
-  .profile-avatar {
-    margin: 0 auto 15px;
-  }
-  
-  .info-grid {
-    grid-template-columns: 1fr;
-  }
-}
   </style>
 </head>
 <body>
@@ -445,21 +462,20 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         <div>
           <h3>Duración Total</h3>
           <p>
-            <?php 
-            $start = new DateTime($member['start_date']);
-            $end = new DateTime($member['end_date']);
-            $interval = $start->diff($end);
-            echo $interval->m > 0 ? $interval->m . ' mes(es)' : $interval->d . ' días';
-            ?>
+            <?= $member['duration_days'] ?> día<?= $member['duration_days'] != 1 ? 's' : '' ?>
+            (<?= floor($member['duration_days']/30) ?> mes<?= floor($member['duration_days']/30) != 1 ? 'es' : '' ?>)
           </p>
         </div>
         
         <div>
           <h3>Acciones</h3>
           <div class="actions">
-            <a href="#" class="btn btn-primary btn-sm">
-              <i class="fas fa-sync-alt"></i> Renovar
-            </a>
+            <form method="post" style="display: inline;">
+              <button type="submit" name="renew_membership" class="btn btn-primary btn-sm" 
+                      onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime("+".$member['duration_days']." days")) ?>')">
+                <i class="fas fa-sync-alt"></i> Renovar
+              </button>
+            </form>
             <a href="#" class="btn btn-success btn-sm">
               <i class="fas fa-print"></i> Imprimir
             </a>
@@ -548,7 +564,7 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         <a href="#" class="btn btn-success">
           <i class="fas fa-money-bill-wave"></i> Registrar Pago
         </a>
-        <a href="#" class="btn btn-primary">
+        <a href="edit_member.php?id=<?= $member_id ?>" class="btn btn-primary">
           <i class="fas fa-edit"></i> Editar Perfil
         </a>
         <a href="#" class="btn btn-danger">
@@ -562,14 +578,38 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
   </div>
 
   <script>
+  // Mostrar mensaje de éxito si se renovó
+  <?php if (isset($_GET['success']) && $_GET['success'] === 'membership_renewed'): ?>
+    alert('Membresía renovada exitosamente. Nueva fecha de vencimiento: <?= date('d/m/Y', strtotime($member['end_date'])) ?>');
+    window.history.replaceState({}, document.title, window.location.pathname + '?id=<?= $member_id ?>');
+  <?php endif; ?>
+
   // Funcionalidad para recargar saldo
   document.querySelector('.btn-success').addEventListener('click', function(e) {
     e.preventDefault();
     const amount = prompt('Ingrese el monto a recargar:');
-    if (amount && !isNaN(amount) && amount > 0) {
+    if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
       // Aquí deberías hacer una llamada AJAX para procesar la recarga
-      alert(`Recarga de $${amount} realizada con éxito`);
-      location.reload();
+      fetch('process_payment.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `member_id=<?= $member_id ?>&amount=${amount}&type=recarga`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if(data.success) {
+          alert(`Recarga de $${amount} realizada con éxito`);
+          location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Ocurrió un error al procesar la recarga');
+      });
     }
   });
   </script>

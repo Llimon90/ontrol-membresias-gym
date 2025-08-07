@@ -919,20 +919,20 @@ function toggleSection(sectionId, iconId) {
 
 <script>
 // Funciones para las pestañas
-function openTab(evt, tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = "none";
-    }
+// function openTab(evt, tabName) {
+//     const tabContents = document.getElementsByClassName("tab-content");
+//     for (let i = 0; i < tabContents.length; i++) {
+//         tabContents[i].style.display = "none";
+//     }
     
-    const tabButtons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].className = tabButtons[i].className.replace(" active", "");
-    }
+//     const tabButtons = document.getElementsByClassName("tab-btn");
+//     for (let i = 0; i < tabButtons.length; i++) {
+//         tabButtons[i].className = tabButtons[i].className.replace(" active", "");
+//     }
     
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
-}
+//     document.getElementById(tabName).style.display = "block";
+//     evt.currentTarget.className += " active";
+// }
 
 
 // Mostrar/ocultar campo de producto según tipo de pago

@@ -3,12 +3,13 @@ require 'backend/config.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) {
     $member_id = $_POST['member_id'];
-    $payment_method = $_POST['payment_method'] ?? 'efectivo'; // Valor por defecto
+    $payment_method = 'efectivo'; // Método por defecto para renovaciones automáticas
     
     try {
         // 1. Obtener información del miembro y su membresía
         $stmt = $pdo->prepare("
             SELECT 
+                m.id,
                 m.membership_id, 
                 m.end_date,
                 ms.name as membership_name,
@@ -44,7 +45,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) 
             $data['amount'],
             $payment_method,
             'renovación',
-            "Renovación de {$data['membership_name']} por {$data['duration_days']} días"
+            "Renovación automática de {$data['membership_name']} por {$data['duration_days']} días"
         ]);
         
         // 4. Actualizar la fecha de vencimiento del miembro
@@ -52,16 +53,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) 
         $stmt->execute([$new_end_date, $member_id]);
         
         // Redirigir con mensaje de éxito
-        header("Location: member_details.php?member_id={$member_id}&success=1");
+        header("Location: member_profile.php?member_id={$member_id}&renewal_success=1");
         exit;
         
     } catch (PDOException $e) {
         // Manejo de errores de base de datos
-        header("Location: member_details.php?member_id={$member_id}&error=".urlencode("Error de base de datos: ".$e->getMessage()));
+        header("Location: member_profile.php?member_id={$member_id}&error=".urlencode("Error de base de datos: ".$e->getMessage()));
         exit;
     } catch (Exception $e) {
         // Manejo de otros errores
-        header("Location: member_details.php?member_id={$member_id}&error=".urlencode($e->getMessage()));
+        header("Location: member_profile.php?member_id={$member_id}&error=".urlencode($e->getMessage()));
         exit;
     }
 }
+
+// Si se accede directamente al archivo sin parámetros POST
+header("Location: member_profile.php");
+exit;

@@ -444,86 +444,112 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       </div>
     </div>
 
-    <!-- Detalles de membresía -->
-    <div class="card">
-      <h2 class="card-title"><i class="fas fa-id-card"></i> Detalles de Membresía</h2>
-      
-      <div class="info-grid">
-        <div>
-          <h3>Fecha de Inicio</h3>
-          <p><?= date('d/m/Y', strtotime($member['start_date'])) ?></p>
-        </div>
-        
-        <div>
-          <h3>Fecha de Vencimiento</h3>
-          <p><?= date('d/m/Y', strtotime($member['end_date'])) ?></p>
-        </div>
-        
-        <div>
-          <h3>Duración Total</h3>
-          <p>
-            <?= $member['duration_days'] ?> día<?= $member['duration_days'] != 1 ? 's' : '' ?>
-            (<?= floor($member['duration_days']/30) ?> mes<?= floor($member['duration_days']/30) != 1 ? 'es' : '' ?>)
-          </p>
-        </div>
-        
-        <div>
-          <h3>Acciones</h3>
-          <div class="actions">
-            <form method="post" style="display: inline;">
-              <button type="submit" name="renew_membership" class="btn btn-primary btn-sm" 
-                      onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime("+".$member['duration_days']." days")) ?>')">
-                <i class="fas fa-sync-alt"></i> Renovar
-              </button>
-            </form>
-            <a href="#" class="btn btn-success btn-sm">
-              <i class="fas fa-print"></i> Imprimir
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
+    <?php
+// Al inicio del archivo, antes de cualquier HTML
+require 'backend/config.php';
 
-    <!-- Historial de pagos -->
-    <div class="card">
-      <h2 class="card-title"><i class="fas fa-history"></i> Últimos Pagos</h2>
-      
-      <div class="table-responsive">
+// Mostrar mensajes de éxito/error
+if (isset($_GET['renewal_success'])) {
+    echo '<div class="alert alert-success">Membresía renovada exitosamente!</div>';
+} elseif (isset($_GET['error'])) {
+    echo '<div class="alert alert-danger">Error: '.htmlspecialchars($_GET['error']).'</div>';
+}
+
+// Obtener datos del miembro
+$member_id = $_GET['member_id'] ?? null;
+if ($member_id) {
+    $stmt = $pdo->prepare("SELECT m.*, ms.duration_days FROM members m JOIN memberships ms ON m.membership_id = ms.id WHERE m.id = ?");
+    $stmt->execute([$member_id]);
+    $member = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    // Obtener últimos pagos
+    $stmt = $pdo->prepare("SELECT * FROM payments WHERE member_id = ? ORDER BY payment_date DESC LIMIT 5");
+    $stmt->execute([$member_id]);
+    $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+?>
+
+<!-- Detalles de membresía -->
+<div class="card">
+    <h2 class="card-title"><i class="fas fa-id-card"></i> Detalles de Membresía</h2>
+    
+    <div class="info-grid">
+        <div>
+            <h3>Fecha de Inicio</h3>
+            <p><?= date('d/m/Y', strtotime($member['start_date'])) ?></p>
+        </div>
+        
+        <div>
+            <h3>Fecha de Vencimiento</h3>
+            <p><?= date('d/m/Y', strtotime($member['end_date'])) ?></p>
+        </div>
+        
+        <div>
+            <h3>Duración Total</h3>
+            <p>
+                <?= $member['duration_days'] ?> día<?= $member['duration_days'] != 1 ? 's' : '' ?>
+                (<?= floor($member['duration_days']/30) ?> mes<?= floor($member['duration_days']/30) != 1 ? 'es' : '' ?>)
+            </p>
+        </div>
+        
+        <div>
+            <h3>Acciones</h3>
+            <div class="actions">
+                <form method="post" action="process_payment.php" style="display: inline;">
+                    <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+                    <input type="hidden" name="renew_membership" value="1">
+                    <button type="submit" class="btn btn-primary btn-sm" 
+                            onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime($member['end_date'] . " + {$member['duration_days']} days")) ?>')">
+                        <i class="fas fa-sync-alt"></i> Renovar
+                    </button>
+                </form>
+                <a href="#" class="btn btn-success btn-sm">
+                    <i class="fas fa-print"></i> Imprimir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Historial de pagos -->
+<div class="card">
+    <h2 class="card-title"><i class="fas fa-history"></i> Últimos Pagos</h2>
+    
+    <div class="table-responsive">
         <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Monto</th>
-              <th>Tipo</th>
-              <th>Método</th>
-              <th>Descripción</th>
-            </tr>
-          </thead>
-          <tbody>
-            <?php foreach($payments as $payment): ?>
-            <tr>
-              <td><?= date('d/m/Y H:i', strtotime($payment['payment_date'])) ?></td>
-              <td>$<?= number_format($payment['amount'], 2) ?></td>
-              <td><?= ucfirst($payment['payment_type']) ?></td>
-              <td><?= ucfirst($payment['payment_method']) ?></td>
-              <td><?= htmlspecialchars($payment['description']) ?></td>
-            </tr>
-            <?php endforeach; ?>
-            
-            <?php if (empty($payments)): ?>
-            <tr>
-              <td colspan="5" style="text-align: center;">No hay registros de pagos</td>
-            </tr>
-            <?php endif; ?>
-          </tbody>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Monto</th>
+                    <th>Tipo</th>
+                    <th>Método</th>
+                    <th>Descripción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($payments as $payment): ?>
+                <tr>
+                    <td><?= date('d/m/Y H:i', strtotime($payment['payment_date'])) ?></td>
+                    <td>$<?= number_format($payment['amount'], 2) ?></td>
+                    <td><?= ucfirst($payment['payment_type']) ?></td>
+                    <td><?= ucfirst($payment['payment_method']) ?></td>
+                    <td><?= htmlspecialchars($payment['description']) ?></td>
+                </tr>
+                <?php endforeach; ?>
+                
+                <?php if (empty($payments)): ?>
+                <tr>
+                    <td colspan="5" style="text-align: center;">No hay registros de pagos</td>
+                </tr>
+                <?php endif; ?>
+            </tbody>
         </table>
-      </div>
-      
-      <a href="payment_history.php?member_id=<?= $member_id ?>" class="btn btn-primary" style="margin-top: 15px;">
-        <i class="fas fa-list"></i> Ver Historial Completo
-      </a>
     </div>
-
+    
+    <a href="payment_history.php?member_id=<?= $member_id ?>" class="btn btn-primary" style="margin-top: 15px;">
+        <i class="fas fa-list"></i> Ver Historial Completo
+    </a>
+</div>
     <!-- Productos adquiridos -->
     <div class="card">
       <h2 class="card-title"><i class="fas fa-shopping-bag"></i> Productos Adquiridos</h2>

@@ -696,7 +696,7 @@ function toggleSection(sectionId, iconId) {
 }
 </script>
 
-<!-- Tab de Registrar Pago -->
+ <!-- Tab de Registrar Pago -->
     <div id="payment-tab" class="tab-content" style="display: none;">
         <form id="payment-form" method="post" action="process_payment.php">
             <div class="form-grid">
@@ -802,54 +802,102 @@ function toggleSection(sectionId, iconId) {
     </div>
 </div>
 
+<!-- Modal para recarga rápida -->
+<div id="quickPaymentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('quickPaymentModal')">&times;</span>
+        <h3>Recargar saldo a <span id="member-name"></span></h3>
+        <form id="quick-payment-form" method="post" action="process_payment.php">
+            <input type="hidden" name="member_id" id="quick-member-id">
+            <input type="hidden" name="payment_type" value="recarga">
+            
+            <div class="form-group">
+                <label>Monto *</label>
+                <input type="number" name="amount" step="0.01" min="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Método de Pago *</label>
+                <select name="payment_method" required>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="transferencia">Transferencia</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-money-bill-wave"></i> Recargar Saldo
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para productos -->
+<div id="productModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeModal('productModal')">&times;</span>
+        <h3 id="product-modal-title">Agregar Producto/Servicio</h3>
+        <form id="product-form" method="post" action="process_product.php">
+            <input type="hidden" name="product_id" id="product-id">
+            
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Descripción</label>
+                <textarea name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>Precio *</label>
+                <input type="number" name="price" step="0.01" min="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_active" checked> Activo
+                </label>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Guardar Producto
+            </button>
+        </form>
+    </div>
+</div>
 
 <script>
-// Función para cambiar pestañas
-function switchTab(tabName) {
-    // Ocultar todos los contenidos
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.style.display = 'none';
-    });
+// Funciones para las pestañas
+function openTab(evt, tabName) {
+    const tabContents = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].style.display = "none";
+    }
     
-    // Desactivar todos los botones
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
+    const tabButtons = document.getElementsByClassName("tab-btn");
+    for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].className = tabButtons[i].className.replace(" active", "");
+    }
     
-    // Mostrar el contenido seleccionado
-    document.getElementById(tabName).style.display = 'block';
-    
-    // Activar el botón correspondiente
-    document.getElementById(`${tabName}-btn`).classList.add('active');
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
 }
 
-// Asignar eventos a los botones de pestaña
-document.getElementById('balance-tab-btn').addEventListener('click', () => switchTab('balance-tab'));
-document.getElementById('payment-tab-btn').addEventListener('click', () => switchTab('payment-tab'));
-document.getElementById('products-tab-btn').addEventListener('click', () => switchTab('products-tab'));
-
-// Mostrar/ocultar campo de producto según tipo de pago
-document.getElementById('payment-type-select').addEventListener('change', function() {
+// Mostrar/ocultar campo de productos según tipo de pago
+document.querySelector('select[name="payment_type"]').addEventListener('change', function() {
     const productGroup = document.getElementById('product-group');
-    const productSelect = document.getElementById('product-select');
-    const amountInput = document.getElementById('payment-amount');
-    const descriptionInput = document.getElementById('payment-description');
+    productGroup.style.display = this.value === 'producto' ? 'block' : 'none';
     
+    // Si selecciona producto, actualizar el monto automáticamente
     if (this.value === 'producto') {
-        productGroup.style.display = 'block';
-        
-        // Actualizar monto y descripción al seleccionar producto
-        productSelect.addEventListener('change', function() {
-            if (this.value) {
-                const selectedOption = this.options[this.selectedIndex];
-                amountInput.value = selectedOption.getAttribute('data-price');
-                descriptionInput.value = 'Compra de ' + selectedOption.text.split('($')[0].trim();
+        document.querySelector('select[name="product_id"]').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value) {
+                document.querySelector('input[name="amount"]').value = selectedOption.getAttribute('data-price');
             }
         });
-    } else {
-        productGroup.style.display = 'none';
-        amountInput.value = '';
-        descriptionInput.value = '';
     }
 });
 
@@ -866,9 +914,12 @@ function showProductModal(productId = 0) {
     const title = document.getElementById('product-modal-title');
     
     if (productId > 0) {
+        // Aquí deberías hacer una llamada AJAX para obtener los datos del producto
+        // y rellenar el formulario, o pasar los datos de otra forma
         title.textContent = 'Editar Producto';
         document.getElementById('product-id').value = productId;
-        // Aquí deberías cargar los datos del producto
+        // Ejemplo de cómo rellenar (deberías obtener los datos reales):
+        // document.querySelector('#product-form input[name="name"]').value = 'Nombre del producto';
     } else {
         title.textContent = 'Agregar Producto/Servicio';
         document.getElementById('product-id').value = '';
@@ -895,14 +946,7 @@ window.onclick = function(event) {
         event.target.style.display = 'none';
     }
 }
-
-// Inicializar la pestaña activa al cargar
-document.addEventListener('DOMContentLoaded', () => {
-    switchTab('balance-tab');
-});
 </script>
-
-
 <style>
 /* Estilos para los modales */
 .modal {

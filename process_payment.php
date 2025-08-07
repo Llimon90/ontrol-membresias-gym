@@ -1,10 +1,6 @@
 <?php
 require 'backend/config.php';
 
-// Configurar encoding para la conexión
-$pdo->exec("SET NAMES 'utf8mb4'");
-$pdo->exec("SET CHARACTER SET utf8mb4");
-
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) {
     $member_id = $_POST['member_id'];
     $payment_method = 'efectivo'; // Método por defecto para renovaciones automáticas
@@ -33,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) 
         // 2. Calcular nueva fecha de vencimiento
         $new_end_date = date('Y-m-d', strtotime($data['end_date'] . " + {$data['duration_days']} days"));
         
-        // 3. Registrar el pago
+        // 3. Registrar el pago - USANDO EL VALOR CORRECTO DEL ENUM
         $stmt = $pdo->prepare("
             INSERT INTO payments (
                 member_id, 
@@ -48,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) 
             $member_id,
             $data['amount'],
             $payment_method,
-            'renovacion', // Texto sin acento para evitar problemas
-            "Renovacion automatica de {$data['membership_name']} por {$data['duration_days']} dias"
+            'membresia', // VALOR CORRECTO según tu ENUM
+            "Renovación de {$data['membership_name']} por {$data['duration_days']} días"
         ]);
         
         // 4. Actualizar la fecha de vencimiento del miembro

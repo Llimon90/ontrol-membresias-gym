@@ -696,117 +696,122 @@ function toggleSection(sectionId, iconId) {
 }
 </script>
 
-<div class="tabs-container">
-    <!-- Botones de pestañas -->
-    <div class="tabs">
-        <button class="tab-btn active" onclick="openTab(event, 'payment-tab')">Registrar Pago</button>
-        <button class="tab-btn" onclick="openTab(event, 'products-tab')">Productos/Servicios</button>
-    </div>
 
-    <!-- Contenido de las pestañas -->
-    <div class="tab-content active" id="payment-tab">
-        <form id="payment-form" method="post" action="process_payment.php">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Miembro *</label>
-                    <select name="member_id" id="payment-member" required>
-                        <option value="">Seleccionar miembro...</option>
-                        <?php foreach($members as $m): ?>
-                        <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['phone']) ?>)</option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Tipo de Pago *</label>
-                    <select name="payment_type" required>
-                        <option value="membresia">Membresía</option>
-                        <option value="producto">Producto/Servicio</option>
-                        <option value="recarga">Recarga de Saldo</option>
-                    </select>
-                </div>
-                
-                <div class="form-group" id="product-group" style="display: none;">
-                    <label>Producto/Servicio</label>
-                    <select name="product_id">
-                        <option value="">Seleccionar producto...</option>
-                        <?php
-                        $products = $pdo->query("SELECT * FROM gym_products WHERE is_active = TRUE")->fetchAll(PDO::FETCH_ASSOC);
-                        foreach($products as $p): ?>
-                        <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>">
-                            <?= htmlspecialchars($p['name']) ?> ($<?= number_format($p['price'], 2) ?>)
-                        </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Monto *</label>
-                    <input type="number" name="amount" step="0.01" min="0" required>
-                </div>
-                
-                <div class="form-group">
-                    <label>Método de Pago *</label>
-                    <select name="payment_method" required>
-                        <option value="efectivo">Efectivo</option>
-                        <option value="tarjeta">Tarjeta</option>
-                        <option value="transferencia">Transferencia</option>
-                        <option value="otros">Otros</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label>Referencia/Descripción</label>
-                    <input type="text" name="description" placeholder="Ej: Pago mensualidad enero">
-                </div>
+
+<!-- REGISTROS DE SPAGOS RAPIDOS -->
+ 
+<div class="tabs">
+    <button class="tab-btn active" onclick="openTab(event, 'payment-tab')">
+        <i class="fas fa-credit-card"></i> Pagos
+    </button>
+    <button class="tab-btn" onclick="openTab(event, 'products-tab')">
+        <i class="fas fa-box-open"></i> Productos/Servicios
+    </button>
+</div>
+
+<!-- Contenido de las pestañas -->
+<div class="tab-content active" id="payment-tab">
+    <form id="payment-form" method="post" action="process_payment.php">
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Miembro *</label>
+                <select name="member_id" id="payment-member" required>
+                    <option value="">Seleccionar miembro...</option>
+                    <?php foreach($members as $m): ?>
+                    <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['phone']) ?>)</option>
+                    <?php endforeach; ?>
+                </select>
             </div>
             
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Registrar Pago
-            </button>
-        </form>
-    </div>
-    
-    <div class="tab-content" id="products-tab">
-        <button class="btn btn-success" style="margin-bottom: 15px;" onclick="showProductModal()">
-            <i class="fas fa-plus"></i> Agregar Producto/Servicio
-        </button>
-        
-        <div class="table-responsive">
-            <table class="data-table">
-                <thead>
-                    <tr>
-                        <th>Nombre</th>
-                        <th>Descripción</th>
-                        <th>Precio</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach($products as $p): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($p['name']) ?></td>
-                        <td><?= htmlspecialchars($p['description']) ?></td>
-                        <td>$<?= number_format($p['price'], 2) ?></td>
-                        <td>
-                            <span class="status-badge <?= $p['is_active'] ? 'status-active' : 'status-expired' ?>">
-                                <?= $p['is_active'] ? 'Activo' : 'Inactivo' ?>
-                            </span>
-                        </td>
-                        <td>
-                            <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
+            <div class="form-group">
+                <label>Tipo de Pago *</label>
+                <select name="payment_type" required>
+                    <option value="membresia">Membresía</option>
+                    <option value="producto">Producto/Servicio</option>
+                    <option value="recarga">Recarga de Saldo</option>
+                </select>
+            </div>
+            
+            <div class="form-group" id="product-group" style="display: none;">
+                <label>Producto/Servicio</label>
+                <select name="product_id">
+                    <option value="">Seleccionar producto...</option>
+                    <?php
+                    $products = $pdo->query("SELECT * FROM gym_products WHERE is_active = TRUE")->fetchAll(PDO::FETCH_ASSOC);
+                    foreach($products as $p): ?>
+                    <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>">
+                        <?= htmlspecialchars($p['name']) ?> ($<?= number_format($p['price'], 2) ?>)
+                    </option>
                     <?php endforeach; ?>
-                </tbody>
-            </table>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Monto *</label>
+                <input type="number" name="amount" step="0.01" min="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label>Método de Pago *</label>
+                <select name="payment_method" required>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="transferencia">Transferencia</option>
+                    <option value="otros">Otros</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>Referencia/Descripción</label>
+                <input type="text" name="description" placeholder="Ej: Pago mensualidad enero">
+            </div>
         </div>
+        
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save"></i> Registrar Pago
+        </button>
+    </form>
+</div>
+
+<div class="tab-content" id="products-tab">
+    <button class="btn btn-success" style="margin-bottom: 15px;" onclick="showProductModal()">
+        <i class="fas fa-plus"></i> Agregar Producto/Servicio
+    </button>
+    
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Descripción</th>
+                    <th>Precio</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($products as $p): ?>
+                <tr>
+                    <td><?= htmlspecialchars($p['name']) ?></td>
+                    <td><?= htmlspecialchars($p['description']) ?></td>
+                    <td>$<?= number_format($p['price'], 2) ?></td>
+                    <td>
+                        <span class="status-badge <?= $p['is_active'] ? 'status-active' : 'status-expired' ?>">
+                            <?= $p['is_active'] ? 'Activo' : 'Inactivo' ?>
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 
@@ -849,29 +854,49 @@ function toggleSection(sectionId, iconId) {
             
             <div class="form-group">
                 <label>Nombre *</label>
-                <input type="text" name="name" required>
+                <input type="text" name="name" id="product-name" required>
             </div>
             
             <div class="form-group">
                 <label>Descripción</label>
-                <textarea name="description" rows="3"></textarea>
+                <textarea name="description" id="product-description" rows="3"></textarea>
             </div>
             
             <div class="form-group">
                 <label>Precio *</label>
-                <input type="number" name="price" step="0.01" min="0" required>
+                <input type="number" name="price" id="product-price" step="0.01" min="0" required>
             </div>
             
             <div class="form-group">
                 <label>
-                    <input type="checkbox" name="is_active" checked> Activo
+                    <input type="checkbox" name="is_active" id="product-is-active" checked> Activo
                 </label>
             </div>
             
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Guardar Producto
-            </button>
+            <div class="form-buttons">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Guardar Producto
+                </button>
+                <button type="button" class="btn btn-danger" id="delete-product-btn" style="display: none;" onclick="deleteProduct()">
+                    <i class="fas fa-trash"></i> Eliminar Producto
+                </button>
+            </div>
         </form>
+    </div>
+</div>
+
+<div id="confirmDeleteModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <h3>Confirmar Eliminación</h3>
+        <p>¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer.</p>
+        <div class="form-buttons">
+            <button type="button" class="btn btn-secondary" onclick="closeModal('confirmDeleteModal')">
+                <i class="fas fa-times"></i> Cancelar
+            </button>
+            <button type="button" class="btn btn-danger" id="confirm-delete-btn">
+                <i class="fas fa-trash"></i> Eliminar
+            </button>
+        </div>
     </div>
 </div>
 
@@ -922,15 +947,36 @@ function showPaymentForm(memberId, memberName) {
 function showProductModal(productId = 0) {
     const modal = document.getElementById('productModal');
     const title = document.getElementById('product-modal-title');
+    const deleteBtn = document.getElementById('delete-product-btn');
     
     if (productId > 0) {
         title.textContent = 'Editar Producto';
         document.getElementById('product-id').value = productId;
-        // Aquí deberías cargar los datos existentes del producto
+        deleteBtn.style.display = 'inline-block';
+        
+        // Cargar datos del producto
+        fetch('get_product.php?id=' + productId)
+            .then(response => response.json())
+            .then(data => {
+                if(data.success) {
+                    const product = data.product;
+                    document.getElementById('product-name').value = product.name;
+                    document.getElementById('product-description').value = product.description;
+                    document.getElementById('product-price').value = product.price;
+                    document.getElementById('product-is-active').checked = product.is_active == 1;
+                } else {
+                    alert('Error al cargar el producto: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error al cargar el producto');
+            });
     } else {
         title.textContent = 'Agregar Producto/Servicio';
         document.getElementById('product-id').value = '';
         document.getElementById('product-form').reset();
+        deleteBtn.style.display = 'none';
     }
     
     modal.style.display = 'block';
@@ -940,11 +986,28 @@ function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
+// Función para editar producto
+function editProduct(productId) {
+    showProductModal(productId);
+}
+
+// Función para confirmar eliminación de producto
+let productToDelete = null;
+
 function confirmDeleteProduct(productId) {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-        window.location.href = 'delete_product.php?id=' + productId;
+    productToDelete = productId;
+    document.getElementById('confirmDeleteModal').style.display = 'block';
+}
+
+// Función para eliminar producto (después de confirmación)
+function deleteProduct() {
+    if(productToDelete) {
+        window.location.href = 'delete_product.php?id=' + productToDelete;
     }
 }
+
+// Configurar el botón de confirmación de eliminación
+document.getElementById('confirm-delete-btn').addEventListener('click', deleteProduct);
 
 // Cerrar modales al hacer clic fuera
 window.onclick = function(event) {
@@ -960,7 +1023,6 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-/* Estilos para los modales */
 /* Estilos para las pestañas - Versión corregida */
 .tabs {
     border-bottom: 1px solid rgba(255,255,255,0.1);
@@ -1008,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', function() {
     to { opacity: 1; }
 }
 
-/* Estilos para modales (se mantienen igual) */
+/* Estilos para modales */
 .modal {
     display: none; 
     position: fixed;
@@ -1041,6 +1103,118 @@ document.addEventListener('DOMContentLoaded', function() {
 .close:hover {
     color: var(--text-primary);
 }
+
+/* Estilos adicionales para los botones del formulario */
+.form-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.form-buttons button {
+    margin: 0 5px;
+}
+
+.form-buttons button:first-child {
+    margin-left: 0;
+}
+
+.form-buttons button:last-child {
+    margin-right: 0;
+}
+
+/* Estilos para la tabla de productos */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.data-table th {
+    background-color: rgba(255,255,255,0.05);
+    font-weight: 600;
+}
+
+/* Estilos para los badges de estado */
+.status-badge {
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: rgba(40, 167, 69, 0.2);
+    color: #28a745;
+}
+
+.status-expired {
+    background-color: rgba(220, 53, 69, 0.2);
+    color: #dc3545;
+}
+
+/* Estilos para botones */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 16px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: var(--success-dark);
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: var(--danger-dark);
+}
+
+.btn-secondary {
+    background-color: var(--secondary);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: var(--secondary-dark);
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 12px;
+}
+
+.btn i {
+    margin-right: 5px;
+}
+
 </style>
 </body>
 </html>

@@ -906,7 +906,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <style>
 /* Estilos para los modales */
 .modal {
-    /* display: none; */
+    display: none; 
     position: fixed;
     z-index: 1000;
     left: 0;

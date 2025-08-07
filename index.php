@@ -1015,7 +1015,9 @@ document.addEventListener('DOMContentLoaded', () => {
     switchTab('balance-tab');
 });
 </script>
-<style>
+
+
+<!-- <style>
 /* Estilos para los modales */
 .modal {
     /* display: none; */
@@ -1036,7 +1038,7 @@ document.addEventListener('DOMContentLoaded', () => {
     width: 90%;
     max-width: 500px;
     position: relative;
-    
+
 }
 
 .close {
@@ -1081,6 +1083,6 @@ document.addEventListener('DOMContentLoaded', () => {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-</style>
+</style> -->
 </body>
 </html>

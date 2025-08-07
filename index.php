@@ -1036,6 +1036,7 @@ document.addEventListener('DOMContentLoaded', () => {
     width: 90%;
     max-width: 500px;
     position: relative;
+    
 }
 
 .close {

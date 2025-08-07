@@ -696,7 +696,7 @@ function toggleSection(sectionId, iconId) {
 }
 </script>
 
-  <!-- Sección de Saldo y Pagos -->
+ <!-- Sección de Saldo y Pagos -->
 <div class="card">
     <h2 class="card-title"><i class="fas fa-wallet"></i> Gestión de Pagos y Saldos</h2>
     
@@ -761,7 +761,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Tipo de Pago *</label>
-                    <select name="payment_type" required>
+                    <select name="payment_type" id="payment-type-select" required>
                         <option value="membresia">Membresía</option>
                         <option value="producto">Producto/Servicio</option>
                         <option value="recarga">Recarga de Saldo</option>
@@ -770,7 +770,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group" id="product-group" style="display: none;">
                     <label>Producto/Servicio</label>
-                    <select name="product_id">
+                    <select name="product_id" id="product-select">
                         <option value="">Seleccionar producto...</option>
                         <?php
                         $products = $pdo->query("SELECT * FROM gym_products WHERE is_active = TRUE")->fetchAll(PDO::FETCH_ASSOC);
@@ -784,7 +784,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Monto *</label>
-                    <input type="number" name="amount" step="0.01" min="0" required>
+                    <input type="number" name="amount" id="payment-amount" step="0.01" min="0" required>
                 </div>
                 
                 <div class="form-group">
@@ -799,7 +799,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Referencia/Descripción</label>
-                    <input type="text" name="description" placeholder="Ej: Pago mensualidad enero">
+                    <input type="text" name="description" id="payment-description" placeholder="Ej: Pago mensualidad enero">
                 </div>
             </div>
             
@@ -918,44 +918,47 @@ function toggleSection(sectionId, iconId) {
 </div>
 
 <script>
-// Funciones para las pestañas
-// function openTab(evt, tabName) {
-//     const tabContents = document.getElementsByClassName("tab-content");
-//     for (let i = 0; i < tabContents.length; i++) {
-//         tabContents[i].style.display = "none";
-//     }
+// Función para cambiar entre pestañas
+function openTab(evt, tabName) {
+    // Ocultar todos los contenidos de pestañas
+    const tabContents = document.getElementsByClassName("tab-content");
+    for (let i = 0; i < tabContents.length; i++) {
+        tabContents[i].style.display = "none";
+    }
     
-//     const tabButtons = document.getElementsByClassName("tab-btn");
-//     for (let i = 0; i < tabButtons.length; i++) {
-//         tabButtons[i].className = tabButtons[i].className.replace(" active", "");
-//     }
+    // Desactivar todos los botones de pestañas
+    const tabButtons = document.getElementsByClassName("tab-btn");
+    for (let i = 0; i < tabButtons.length; i++) {
+        tabButtons[i].classList.remove("active");
+    }
     
-//     document.getElementById(tabName).style.display = "block";
-//     evt.currentTarget.className += " active";
-// }
-
+    // Mostrar la pestaña actual y marcar como activa
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.classList.add("active");
+}
 
 // Mostrar/ocultar campo de producto según tipo de pago
-document.querySelector('select[name="payment_type"]').addEventListener('change', function() {
+document.getElementById('payment-type-select').addEventListener('change', function() {
     const productGroup = document.getElementById('product-group');
-    const productSelect = document.querySelector('select[name="product_id"]');
-    const amountInput = document.querySelector('input[name="amount"]');
+    const productSelect = document.getElementById('product-select');
+    const amountInput = document.getElementById('payment-amount');
+    const descriptionInput = document.getElementById('payment-description');
     
     if (this.value === 'producto') {
         productGroup.style.display = 'block';
-        productSelect.required = true;
         
-        // Actualizar monto al seleccionar producto
+        // Actualizar monto y descripción al seleccionar producto
         productSelect.addEventListener('change', function() {
             if (this.value) {
                 const selectedOption = this.options[this.selectedIndex];
                 amountInput.value = selectedOption.getAttribute('data-price');
+                descriptionInput.value = 'Compra de ' + selectedOption.text.split('($')[0].trim();
             }
         });
     } else {
         productGroup.style.display = 'none';
-        productSelect.required = false;
-        amountInput.value = ''; // Resetear monto
+        amountInput.value = '';
+        descriptionInput.value = '';
     }
 });
 
@@ -966,19 +969,48 @@ function showPaymentForm(memberId, memberName) {
     document.getElementById('quickPaymentModal').style.display = 'block';
 }
 
-// Cerrar modales
+// Modal para productos
+function showProductModal(productId = 0) {
+    const modal = document.getElementById('productModal');
+    const title = document.getElementById('product-modal-title');
+    
+    if (productId > 0) {
+        title.textContent = 'Editar Producto';
+        document.getElementById('product-id').value = productId;
+        // Aquí deberías cargar los datos del producto
+    } else {
+        title.textContent = 'Agregar Producto/Servicio';
+        document.getElementById('product-id').value = '';
+        document.getElementById('product-form').reset();
+    }
+    
+    modal.style.display = 'block';
+}
+
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
-// Cerrar al hacer clic fuera
+function confirmDeleteProduct(productId) {
+    if (confirm('¿Estás seguro de eliminar este producto?')) {
+        // Aquí deberías hacer una llamada AJAX o redireccionar para eliminar
+        window.location.href = 'delete_product.php?id=' + productId;
+    }
+}
+
+// Cerrar modales al hacer clic fuera
 window.onclick = function(event) {
     if (event.target.className === 'modal') {
         event.target.style.display = 'none';
     }
 }
-</script>
 
+// Inicializar la pestaña activa
+document.addEventListener('DOMContentLoaded', function() {
+    // Por defecto muestra la pestaña de Saldos
+    document.querySelector('.tab-btn.active').click();
+});
+</script>
 
 
 <style>

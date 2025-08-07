@@ -1,10 +1,18 @@
 <?php
 require 'backend/config.php';
 
+session_start();
+
+// Verificar si el usuario está logueado
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit;
+}
+
 $member_id = $_GET['id'] ?? 0;
 
-// Obtener información básica del miembro con duración de membresía
-$member = $pdo->prepare("SELECT m.*, ms.name AS membership_name, ms.duration_days 
+// Obtener información completa del miembro
+$member = $pdo->prepare("SELECT m.*, ms.name AS membership_name, ms.duration_days, ms.price 
                         FROM members m 
                         JOIN memberships ms ON m.membership_id = ms.id 
                         WHERE m.id = ?");
@@ -20,49 +28,73 @@ if (!$member) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) {
     $today = new DateTime();
     $duration_days = $member['duration_days'];
+    $membership_price = $member['price'];
+    $payment_amount = floatval($_POST['payment_amount'] ?? 0);
     
-    // Calcular nueva fecha de vencimiento
-    $new_end_date = clone $today;
-    $new_end_date->add(new DateInterval("P{$duration_days}D"));
-    
-    // Actualizar en la base de datos
-    $stmt = $pdo->prepare("UPDATE members SET start_date = ?, end_date = ? WHERE id = ?");
-    $stmt->execute([
-        $today->format('Y-m-d'),
-        $new_end_date->format('Y-m-d'),
-        $member_id
-    ]);
-    
-    // Registrar el pago de renovación
-    $stmt = $pdo->prepare("INSERT INTO payments (member_id, amount, payment_date, payment_type, description) 
-                          VALUES (?, ?, ?, ?, ?)");
-    $stmt->execute([
-        $member_id,
-        0, // Monto - ajustar según tu lógica de precios
-        $today->format('Y-m-d H:i:s'),
-        'membresia',
-        'Renovación automática de membresía ' . $member['membership_name']
-    ]);
-    
-    // Redirigir para evitar reenvío del formulario
-    header("Location: member_profile.php?id=$member_id&success=membership_renewed");
-    exit;
+    // Validar el pago
+    if ($payment_amount < $membership_price) {
+        $error = "El monto mínimo para renovar es $" . number_format($membership_price, 2);
+    } else {
+        try {
+            $pdo->beginTransaction();
+            
+            // Calcular nueva fecha de vencimiento
+            $new_end_date = clone $today;
+            $new_end_date->add(new DateInterval("P{$duration_days}D"));
+            
+            // Actualizar membresía
+            $stmt = $pdo->prepare("UPDATE members SET start_date = ?, end_date = ? WHERE id = ?");
+            $stmt->execute([
+                $today->format('Y-m-d'),
+                $new_end_date->format('Y-m-d'),
+                $member_id
+            ]);
+            
+            // Registrar el pago
+            $stmt = $pdo->prepare("INSERT INTO payments (member_id, amount, payment_date, payment_type, description, user_id) 
+                                  VALUES (?, ?, ?, ?, ?, ?)");
+            $stmt->execute([
+                $member_id,
+                $payment_amount,
+                $today->format('Y-m-d H:i:s'),
+                'membresia',
+                'Renovación de ' . $member['membership_name'],
+                $_SESSION['user_id']
+            ]);
+            
+            // Actualizar saldo del miembro (si aplica)
+            $stmt = $pdo->prepare("UPDATE member_balances SET balance = balance - ? WHERE member_id = ?");
+            $stmt->execute([$payment_amount, $member_id]);
+            
+            $pdo->commit();
+            
+            // Redirigir para evitar reenvío del formulario
+            header("Location: member_profile.php?id=$member_id&success=membership_renewed");
+            exit;
+            
+        } catch (PDOException $e) {
+            $pdo->rollBack();
+            $error = "Error al procesar la renovación: " . $e->getMessage();
+        }
+    }
 }
 
-// Obtener saldo actual
+// Obtener saldo actual del miembro
 $balance = $pdo->prepare("SELECT balance FROM member_balances WHERE member_id = ?");
 $balance->execute([$member_id]);
 $balance = $balance->fetchColumn() ?? 0;
 
-// Obtener historial de pagos (últimos 10)
-$payments = $pdo->prepare("SELECT * FROM payments 
-                          WHERE member_id = ? 
-                          ORDER BY payment_date DESC 
+// Obtener historial de pagos recientes
+$payments = $pdo->prepare("SELECT p.*, u.username AS user_name 
+                          FROM payments p
+                          LEFT JOIN users u ON p.user_id = u.id
+                          WHERE p.member_id = ? 
+                          ORDER BY p.payment_date DESC 
                           LIMIT 10");
 $payments->execute([$member_id]);
 $payments = $payments->fetchAll(PDO::FETCH_ASSOC);
 
-// Obtener productos adquiridos (últimos 10)
+// Obtener productos adquiridos recientemente
 $products = $pdo->prepare("SELECT p.name, p.price, py.payment_date 
                           FROM payments py
                           JOIN gym_products p ON py.description LIKE CONCAT('%', p.name, '%')
@@ -85,7 +117,7 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Perfil de <?= htmlspecialchars($member['name']) ?> | Gimnasio</title>
+  <title>Perfil de <?= htmlspecialchars($member['name']) ?> | Sistema Gimnasio</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <style>
     :root {
@@ -174,6 +206,15 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
 
     .btn-success:hover {
       background-color: #3ab4d9;
+    }
+
+    .btn-warning {
+      background-color: var(--warning);
+      color: white;
+    }
+
+    .btn-warning:hover {
+      background-color: #e07e0c;
     }
 
     .btn-sm {
@@ -312,57 +353,80 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
 
     .actions {
       display: flex;
-      gap: 5px;
+      gap: 10px;
+      flex-wrap: wrap;
     }
 
-    /* Avatar circular */
-    .profile-avatar {
-      width: 80px;
-      height: 80px;
-      border-radius: 50%;
-      background-color: var(--primary);
-      display: flex;
-      align-items: center;
+    /* Modal de renovación */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.7);
+      z-index: 1000;
       justify-content: center;
-      color: white;
-      font-size: 32px;
-      font-weight: bold;
-      margin-right: 20px;
+      align-items: center;
     }
 
-    /* Tarjetas de información */
-    .info-card {
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 8px;
-      padding: 15px;
-      transition: transform 0.3s ease;
+    .modal-content {
+      background-color: var(--bg-card);
+      padding: 25px;
+      border-radius: 10px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     }
 
-    .info-card:hover {
-      transform: translateY(-3px);
-      background: rgba(255, 255, 255, 0.08);
-    }
-
-    /* Pestañas de perfil */
-    .profile-tabs {
+    .modal-header {
       display: flex;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 20px;
     }
 
-    .profile-tab {
-      padding: 10px 20px;
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.3s;
-    }
-
-    .profile-tab.active {
-      border-bottom: 2px solid var(--success);
+    .modal-header h3 {
+      margin: 0;
       color: var(--success);
     }
 
-    /* Responsive para móviles */
+    .close-modal {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 24px;
+      cursor: pointer;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-secondary);
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 5px;
+      border: 1px solid #444;
+      background-color: rgba(255,255,255,0.1);
+      color: var(--text-primary);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+
+    /* Responsive */
     @media (max-width: 768px) {
       .profile-header {
         flex-direction: column;
@@ -375,6 +439,10 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       
       .info-grid {
         grid-template-columns: 1fr;
+      }
+      
+      .actions {
+        justify-content: center;
       }
     }
   </style>
@@ -411,9 +479,9 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       <div class="info-card">
         <h3>Saldo Actual</h3>
         <div class="value">$<?= number_format($balance, 2) ?></div>
-        <a href="#" class="btn btn-success btn-sm" style="margin-top: 10px;">
+        <button id="rechargeBtn" class="btn btn-success btn-sm" style="margin-top: 10px;">
           <i class="fas fa-money-bill-wave"></i> Recargar Saldo
-        </a>
+        </button>
       </div>
       
       <div class="info-card">
@@ -460,24 +528,25 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         </div>
         
         <div>
-          <h3>Duración Total</h3>
+          <h3>Duración y Precio</h3>
           <p>
             <?= $member['duration_days'] ?> día<?= $member['duration_days'] != 1 ? 's' : '' ?>
-            (<?= floor($member['duration_days']/30) ?> mes<?= floor($member['duration_days']/30) != 1 ? 'es' : '' ?>)
+            <br>
+            <strong>$<?= number_format($member['price'], 2) ?></strong>
           </p>
         </div>
         
         <div>
           <h3>Acciones</h3>
           <div class="actions">
-            <form method="post" style="display: inline;">
-              <button type="submit" name="renew_membership" class="btn btn-primary btn-sm" 
-                      onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime("+".$member['duration_days']." days")) ?>')">
-                <i class="fas fa-sync-alt"></i> Renovar
-              </button>
-            </form>
-            <a href="#" class="btn btn-success btn-sm">
+            <button id="renewBtn" class="btn btn-primary btn-sm">
+              <i class="fas fa-sync-alt"></i> Renovar
+            </button>
+            <button class="btn btn-success btn-sm">
               <i class="fas fa-print"></i> Imprimir
+            </button>
+            <a href="edit_member.php?id=<?= $member_id ?>" class="btn btn-warning btn-sm">
+              <i class="fas fa-edit"></i> Editar
             </a>
           </div>
         </div>
@@ -495,7 +564,7 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
               <th>Fecha</th>
               <th>Monto</th>
               <th>Tipo</th>
-              <th>Método</th>
+              <th>Registrado por</th>
               <th>Descripción</th>
             </tr>
           </thead>
@@ -505,7 +574,7 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
               <td><?= date('d/m/Y H:i', strtotime($payment['payment_date'])) ?></td>
               <td>$<?= number_format($payment['amount'], 2) ?></td>
               <td><?= ucfirst($payment['payment_type']) ?></td>
-              <td><?= ucfirst($payment['payment_method']) ?></td>
+              <td><?= htmlspecialchars($payment['user_name'] ?? 'Sistema') ?></td>
               <td><?= htmlspecialchars($payment['description']) ?></td>
             </tr>
             <?php endforeach; ?>
@@ -560,47 +629,199 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
     <div class="card">
       <h2 class="card-title"><i class="fas fa-bolt"></i> Acciones Rápidas</h2>
       
-      <div class="actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="#" class="btn btn-success">
+      <div class="actions">
+        <button id="quickPaymentBtn" class="btn btn-success">
           <i class="fas fa-money-bill-wave"></i> Registrar Pago
-        </a>
+        </button>
         <a href="edit_member.php?id=<?= $member_id ?>" class="btn btn-primary">
           <i class="fas fa-edit"></i> Editar Perfil
         </a>
-        <a href="#" class="btn btn-danger">
+        <button id="reminderBtn" class="btn btn-danger">
           <i class="fas fa-envelope"></i> Enviar Recordatorio
-        </a>
-        <a href="#" class="btn btn-primary">
+        </button>
+        <button class="btn btn-primary">
           <i class="fas fa-qrcode"></i> Generar QR
-        </a>
+        </button>
       </div>
     </div>
   </div>
 
+  <!-- Modal de renovación -->
+  <div id="renewModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-sync-alt"></i> Renovar Membresía</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      
+      <form id="renewForm" method="post">
+        <input type="hidden" name="renew_membership" value="1">
+        
+        <div class="form-group">
+          <label>Miembro</label>
+          <input type="text" value="<?= htmlspecialchars($member['name']) ?>" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label>Tipo de Membresía</label>
+          <input type="text" value="<?= htmlspecialchars($member['membership_name']) ?>" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label>Duración</label>
+          <input type="text" value="<?= $member['duration_days'] ?> días" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label>Precio</label>
+          <input type="text" value="$<?= number_format($member['price'], 2) ?>" readonly>
+        </div>
+        
+        <div class="form-group">
+          <label for="payment_amount">Monto de Pago *</label>
+          <input type="number" step="0.01" min="<?= $member['price'] ?>" 
+                 name="payment_amount" id="payment_amount" 
+                 value="<?= $member['price'] ?>" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Nueva Fecha de Vencimiento</label>
+          <input type="text" value="<?= date('d/m/Y', strtotime("+".$member['duration_days']." days")) ?>" readonly>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger close-modal">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-check"></i> Confirmar Renovación
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal de recarga de saldo -->
+  <div id="rechargeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3><i class="fas fa-money-bill-wave"></i> Recargar Saldo</h3>
+        <button class="close-modal">&times;</button>
+      </div>
+      
+      <form id="rechargeForm">
+        <div class="form-group">
+          <label for="recharge_amount">Monto a Recargar *</label>
+          <input type="number" step="0.01" min="0.01" id="recharge_amount" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="recharge_method">Método de Pago *</label>
+          <select id="recharge_method" required>
+            <option value="">Seleccionar...</option>
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="transferencia">Transferencia</option>
+          </select>
+        </div>
+        
+        <div class="modal-footer">
+          <button type="button" class="btn btn-danger close-modal">
+            <i class="fas fa-times"></i> Cancelar
+          </button>
+          <button type="submit" class="btn btn-success">
+            <i class="fas fa-check"></i> Confirmar Recarga
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
-  // Mostrar mensaje de éxito si se renovó
+  // Mostrar mensajes del servidor
   <?php if (isset($_GET['success']) && $_GET['success'] === 'membership_renewed'): ?>
-    alert('Membresía renovada exitosamente. Nueva fecha de vencimiento: <?= date('d/m/Y', strtotime($member['end_date'])) ?>');
+    alert('Membresía renovada exitosamente. Nueva fecha de vencimiento: <?= date('d/m/Y', strtotime("+".$member['duration_days']." days")) ?>');
     window.history.replaceState({}, document.title, window.location.pathname + '?id=<?= $member_id ?>');
   <?php endif; ?>
 
-  // Funcionalidad para recargar saldo
-  document.querySelector('.btn-success').addEventListener('click', function(e) {
+  <?php if (isset($error)): ?>
+    alert('<?= addslashes($error) ?>');
+  <?php endif; ?>
+
+  // Funcionalidad de los modales
+  const renewModal = document.getElementById('renewModal');
+  const rechargeModal = document.getElementById('rechargeModal');
+  
+  // Mostrar modal de renovación
+  document.getElementById('renewBtn').addEventListener('click', () => {
+    renewModal.style.display = 'flex';
+    document.getElementById('payment_amount').focus();
+  });
+  
+  // Mostrar modal de recarga
+  document.getElementById('rechargeBtn').addEventListener('click', () => {
+    rechargeModal.style.display = 'flex';
+    document.getElementById('recharge_amount').focus();
+  });
+  
+  // Cerrar modales
+  document.querySelectorAll('.close-modal').forEach(btn => {
+    btn.addEventListener('click', () => {
+      renewModal.style.display = 'none';
+      rechargeModal.style.display = 'none';
+    });
+  });
+  
+  // Cerrar al hacer clic fuera del modal
+  window.addEventListener('click', (e) => {
+    if (e.target === renewModal) renewModal.style.display = 'none';
+    if (e.target === rechargeModal) rechargeModal.style.display = 'none';
+  });
+  
+  // Enviar recordatorio
+  document.getElementById('reminderBtn').addEventListener('click', () => {
+    if (confirm('¿Enviar recordatorio de pago a este miembro?')) {
+      fetch('send_reminder.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `member_id=<?= $member_id ?>`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert('Recordatorio enviado con éxito');
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Ocurrió un error al enviar el recordatorio');
+      });
+    }
+  });
+  
+  // Procesar recarga de saldo
+  document.getElementById('rechargeForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const amount = prompt('Ingrese el monto a recargar:');
-    if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-      // Aquí deberías hacer una llamada AJAX para procesar la recarga
+    
+    const amount = parseFloat(document.getElementById('recharge_amount').value);
+    const method = document.getElementById('recharge_method').value;
+    
+    if (amount > 0 && method) {
       fetch('process_payment.php', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
-        body: `member_id=<?= $member_id ?>&amount=${amount}&type=recarga`
+        body: `member_id=<?= $member_id ?>&amount=${amount}&type=recarga&method=${method}`
       })
       .then(response => response.json())
       .then(data => {
-        if(data.success) {
-          alert(`Recarga de $${amount} realizada con éxito`);
+        if (data.success) {
+          alert(`Recarga de $${amount.toFixed(2)} realizada con éxito`);
           location.reload();
         } else {
           alert('Error: ' + data.message);
@@ -609,6 +830,33 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       .catch(error => {
         console.error('Error:', error);
         alert('Ocurrió un error al procesar la recarga');
+      });
+    }
+  });
+  
+  // Registrar pago rápido
+  document.getElementById('quickPaymentBtn').addEventListener('click', () => {
+    const amount = prompt('Ingrese el monto del pago:');
+    if (amount && !isNaN(amount) {
+      fetch('process_payment.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `member_id=<?= $member_id ?>&amount=${amount}&type=otro`
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          alert(`Pago de $${amount} registrado con éxito`);
+          location.reload();
+        } else {
+          alert('Error: ' + data.message);
+        }
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Ocurrió un error al registrar el pago');
       });
     }
   });

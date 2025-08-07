@@ -961,6 +961,54 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <style>
 /* Estilos para los modales */
+/* Estilos para las pestañas - Versión corregida */
+.tabs {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 20px;
+    display: flex; /* Añadido para alinear los botones */
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.3s;
+    position: relative; /* Necesario para el efecto de borde inferior */
+}
+
+.tab-btn.active {
+    color: var(--success);
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: var(--success);
+}
+
+/* Contenido de pestañas - Versión corregida */
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s;
+}
+
+.tab-content.active {
+    display: block; /* Esto muestra la pestaña activa */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Estilos para modales (se mantienen igual) */
 .modal {
     display: none; 
     position: fixed;
@@ -992,37 +1040,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 .close:hover {
     color: var(--text-primary);
-}
-
-/* Estilos para las pestañas */
-.tabs {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 20px;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    color: var(--text-secondary);
-    font-weight: 500;
-    transition: all 0.3s;
-}
-
-.tab-btn.active {
-    color: var(--success);
-    border-bottom: 2px solid var(--success);
-}
-
-.tab-content {
-    display: none;
-    animation: fadeIn 0.3s;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 </style>
 </body>

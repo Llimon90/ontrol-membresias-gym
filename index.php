@@ -696,56 +696,7 @@ function toggleSection(sectionId, iconId) {
 }
 </script>
 
-<!-- Sección de Saldo y Pagos -->
-<div class="card">
-    <h2 class="card-title"><i class="fas fa-wallet"></i> Gestión de Pagos y Saldos</h2>
-    
-    <div class="tabs" style="margin-bottom: 20px;">
-        <button class="tab-btn active" id="balance-tab-btn">Saldos</button>
-        <button class="tab-btn" id="payment-tab-btn">Registrar Pago</button>
-        <button class="tab-btn" id="products-tab-btn">Productos/Servicios</button>
-    </div>
-    
-    <!-- Tab de Saldos -->
-    <div id="balance-tab" class="tab-content" style="display: block;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Miembro</th>
-                    <th>Saldo Actual</th>
-                    <th>Última Actualización</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php
-                $balances = $pdo->query("SELECT m.name, mb.balance, mb.last_updated, m.id 
-                                        FROM member_balances mb
-                                        JOIN members m ON mb.member_id = m.id
-                                        ORDER BY mb.last_updated DESC")->fetchAll(PDO::FETCH_ASSOC);
-                
-                foreach($balances as $balance): ?>
-                <tr>
-                    <td><?= htmlspecialchars($balance['name']) ?></td>
-                    <td>$<?= number_format($balance['balance'], 2) ?></td>
-                    <td><?= date('d/m/Y H:i', strtotime($balance['last_updated'])) ?></td>
-                    <td>
-                        <a href="#" onclick="showPaymentForm(<?= $balance['id'] ?>, '<?= htmlspecialchars($balance['name']) ?>')" 
-                           class="btn btn-success btn-sm">
-                            <i class="fas fa-money-bill-wave"></i> Recargar
-                        </a>
-                        <a href="payment_history.php?member_id=<?= $balance['id'] ?>" 
-                           class="btn btn-primary btn-sm">
-                            <i class="fas fa-history"></i> Historial
-                        </a>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    
-    <!-- Tab de Registrar Pago -->
+<!-- Tab de Registrar Pago -->
     <div id="payment-tab" class="tab-content" style="display: none;">
         <form id="payment-form" method="post" action="process_payment.php">
             <div class="form-grid">
@@ -761,7 +712,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Tipo de Pago *</label>
-                    <select name="payment_type" id="payment-type-select" required>
+                    <select name="payment_type" required>
                         <option value="membresia">Membresía</option>
                         <option value="producto">Producto/Servicio</option>
                         <option value="recarga">Recarga de Saldo</option>
@@ -770,7 +721,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group" id="product-group" style="display: none;">
                     <label>Producto/Servicio</label>
-                    <select name="product_id" id="product-select">
+                    <select name="product_id">
                         <option value="">Seleccionar producto...</option>
                         <?php
                         $products = $pdo->query("SELECT * FROM gym_products WHERE is_active = TRUE")->fetchAll(PDO::FETCH_ASSOC);
@@ -784,7 +735,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Monto *</label>
-                    <input type="number" name="amount" id="payment-amount" step="0.01" min="0" required>
+                    <input type="number" name="amount" step="0.01" min="0" required>
                 </div>
                 
                 <div class="form-group">
@@ -799,7 +750,7 @@ function toggleSection(sectionId, iconId) {
                 
                 <div class="form-group">
                     <label>Referencia/Descripción</label>
-                    <input type="text" name="description" id="payment-description" placeholder="Ej: Pago mensualidad enero">
+                    <input type="text" name="description" placeholder="Ej: Pago mensualidad enero">
                 </div>
             </div>
             
@@ -851,71 +802,6 @@ function toggleSection(sectionId, iconId) {
     </div>
 </div>
 
-<!-- Modal para recarga rápida -->
-<div id="quickPaymentModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('quickPaymentModal')">&times;</span>
-        <h3>Recargar saldo a <span id="member-name"></span></h3>
-        <form id="quick-payment-form" method="post" action="process_payment.php">
-            <input type="hidden" name="member_id" id="quick-member-id">
-            <input type="hidden" name="payment_type" value="recarga">
-            
-            <div class="form-group">
-                <label>Monto *</label>
-                <input type="number" name="amount" step="0.01" min="0" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Método de Pago *</label>
-                <select name="payment_method" required>
-                    <option value="efectivo">Efectivo</option>
-                    <option value="tarjeta">Tarjeta</option>
-                    <option value="transferencia">Transferencia</option>
-                </select>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-money-bill-wave"></i> Recargar Saldo
-            </button>
-        </form>
-    </div>
-</div>
-
-<!-- Modal para productos -->
-<div id="productModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeModal('productModal')">&times;</span>
-        <h3 id="product-modal-title">Agregar Producto/Servicio</h3>
-        <form id="product-form" method="post" action="process_product.php">
-            <input type="hidden" name="product_id" id="product-id">
-            
-            <div class="form-group">
-                <label>Nombre *</label>
-                <input type="text" name="name" required>
-            </div>
-            
-            <div class="form-group">
-                <label>Descripción</label>
-                <textarea name="description" rows="3"></textarea>
-            </div>
-            
-            <div class="form-group">
-                <label>Precio *</label>
-                <input type="number" name="price" step="0.01" min="0" required>
-            </div>
-            
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" name="is_active" checked> Activo
-                </label>
-            </div>
-            
-            <button type="submit" class="btn btn-primary">
-                <i class="fas fa-save"></i> Guardar Producto
-            </button>
-        </form>
-    </div>
-</div>
 
 <script>
 // Función para cambiar pestañas
@@ -1017,7 +903,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 
-<!-- <style>
+<style>
 /* Estilos para los modales */
 .modal {
     /* display: none; */
@@ -1083,6 +969,6 @@ document.addEventListener('DOMContentLoaded', () => {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-</style> -->
+</style>
 </body>
 </html>

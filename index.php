@@ -960,79 +960,25 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
-/* Estilos generales para pestañas */
-.tabs-container {
-    width: 100%;
-    margin: 0 auto;
-}
-
-.tabs {
-    display: flex;
-    border-bottom: 1px solid #ddd;
-    margin-bottom: 20px;
-}
-
-.tab-btn {
-    padding: 10px 20px;
-    background: none;
-    border: none;
-    cursor: pointer;
-    font-size: 16px;
-    color: #555;
-    transition: all 0.3s;
-    position: relative;
-}
-
-.tab-btn:hover {
-    color: #333;
-}
-
-.tab-btn.active {
-    color: #2c7be5;
-    font-weight: bold;
-}
-
-.tab-btn.active::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background-color: #2c7be5;
-}
-
-.tab-content {
-    display: none;
-    padding: 15px;
-    animation: fadeIn 0.3s;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-/* Estilos para modales */
+/* Estilos para los modales */
 .modal {
-    display: none;
+    display: none; 
     position: fixed;
     z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    overflow: auto;
+    background-color: rgba(0,0,0,0.7);
 }
 
 .modal-content {
-    background-color: #fefefe;
+    background-color: var(--bg-card);
     margin: 5% auto;
     padding: 20px;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     position: relative;
 }
 
@@ -1045,122 +991,39 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .close:hover {
-    color: #333;
+    color: var(--text-primary);
 }
 
-/* Animación */
+/* Estilos para las pestañas */
+.tabs {
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-weight: 500;
+    transition: all 0.3s;
+}
+
+.tab-btn.active {
+    color: var(--success);
+    border-bottom: 2px solid var(--success);
+}
+
+.tab-content {
+    display: none;
+    animation: fadeIn 0.3s;
+}
+
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
-
-/* Estilos para la tabla */
-.table-responsive {
-    overflow-x: auto;
-}
-
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.data-table th, .data-table td {
-    padding: 12px 15px;
-    text-align: left;
-    border-bottom: 1px solid #ddd;
-}
-
-.data-table th {
-    background-color: #f8f9fa;
-    font-weight: 600;
-}
-
-.data-table tr:hover {
-    background-color: #f5f5f5;
-}
-
-.status-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 500;
-}
-
-.status-active {
-    background-color: #d4edda;
-    color: #155724;
-}
-
-.status-expired {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-
-.btn {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 14px;
-    transition: all 0.3s;
-}
-
-.btn-primary {
-    background-color: #2c7be5;
-    color: white;
-}
-
-.btn-primary:hover {
-    background-color: #1a68d1;
-}
-
-.btn-success {
-    background-color: #00a854;
-    color: white;
-}
-
-.btn-danger {
-    background-color: #f5222d;
-    color: white;
-}
-
-.btn-sm {
-    padding: 4px 8px;
-    font-size: 12px;
-}
-
-/* Estilos para formularios */
-.form-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-}
-
-.form-group {
-    margin-bottom: 15px;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.form-group textarea {
-    min-height: 80px;
-    resize: vertical;
-}
-</style>
 </style>
 </body>
 </html>

@@ -573,11 +573,11 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
             $days_left = $interval->days;
           ?>
             <tr>
-              <td>
-                <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link">
-                  <?= htmlspecialchars($m['name']) ?>
-                </a>
-              </td>
+             <td>
+    <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
+        <?= htmlspecialchars($m['name']) ?>
+    </a>
+</td>
               <td><?= htmlspecialchars($m['membership_name']) ?></td>
               <td>
                 <span class="status-badge status-expiring">
@@ -641,12 +641,16 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
             $interval = $today->diff($end_date);
             $days_expired = $interval->days;
           ?>
+
+
+
+
             <tr>
               <td>
-                <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link">
-                  <?= htmlspecialchars($m['name']) ?>
-                </a>
-              </td>
+    <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
+        <?= htmlspecialchars($m['name']) ?>
+    </a>
+</td>
               <td><?= htmlspecialchars($m['membership_name']) ?></td>
               <td>
                 <span class="status-badge status-expired">

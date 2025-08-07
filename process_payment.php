@@ -1,6 +1,10 @@
 <?php
 require 'backend/config.php';
 
+// Configurar encoding para la conexión
+$pdo->exec("SET NAMES 'utf8mb4'");
+$pdo->exec("SET CHARACTER SET utf8mb4");
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) {
     $member_id = $_POST['member_id'];
     $payment_method = 'efectivo'; // Método por defecto para renovaciones automáticas
@@ -44,8 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) 
             $member_id,
             $data['amount'],
             $payment_method,
-            'renovación',
-            "Renovación automática de {$data['membership_name']} por {$data['duration_days']} días"
+            'renovacion', // Texto sin acento para evitar problemas
+            "Renovacion automatica de {$data['membership_name']} por {$data['duration_days']} dias"
         ]);
         
         // 4. Actualizar la fecha de vencimiento del miembro

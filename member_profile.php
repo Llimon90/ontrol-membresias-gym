@@ -550,6 +550,8 @@ if ($member_id) {
         <i class="fas fa-list"></i> Ver Historial Completo
     </a>
 </div>
+
+
     <!-- Productos adquiridos -->
     <div class="card">
       <h2 class="card-title"><i class="fas fa-shopping-bag"></i> Productos Adquiridos</h2>

@@ -696,8 +696,15 @@ function toggleSection(sectionId, iconId) {
 }
 </script>
 
- <!-- Tab de Registrar Pago -->
-    <div id="payment-tab" class="tab-content" style="display: none;">
+<div class="tabs-container">
+    <!-- Botones de pestañas -->
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab(event, 'payment-tab')">Registrar Pago</button>
+        <button class="tab-btn" onclick="openTab(event, 'products-tab')">Productos/Servicios</button>
+    </div>
+
+    <!-- Contenido de las pestañas -->
+    <div class="tab-content active" id="payment-tab">
         <form id="payment-form" method="post" action="process_payment.php">
             <div class="form-grid">
                 <div class="form-group">
@@ -760,50 +767,51 @@ function toggleSection(sectionId, iconId) {
         </form>
     </div>
     
-    <!-- Tab de Productos/Servicios -->
-    <div id="products-tab" class="tab-content" style="display: none;">
+    <div class="tab-content" id="products-tab">
         <button class="btn btn-success" style="margin-bottom: 15px;" onclick="showProductModal()">
             <i class="fas fa-plus"></i> Agregar Producto/Servicio
         </button>
         
-        <table>
-            <thead>
-                <tr>
-                    <th>Nombre</th>
-                    <th>Descripción</th>
-                    <th>Precio</th>
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach($products as $p): ?>
-                <tr>
-                    <td><?= htmlspecialchars($p['name']) ?></td>
-                    <td><?= htmlspecialchars($p['description']) ?></td>
-                    <td>$<?= number_format($p['price'], 2) ?></td>
-                    <td>
-                        <span class="status-badge <?= $p['is_active'] ? 'status-active' : 'status-expired' ?>">
-                            <?= $p['is_active'] ? 'Activo' : 'Inactivo' ?>
-                        </span>
-                    </td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
-                            <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                        <th>Descripción</th>
+                        <th>Precio</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach($products as $p): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($p['name']) ?></td>
+                        <td><?= htmlspecialchars($p['description']) ?></td>
+                        <td>$<?= number_format($p['price'], 2) ?></td>
+                        <td>
+                            <span class="status-badge <?= $p['is_active'] ? 'status-active' : 'status-expired' ?>">
+                                <?= $p['is_active'] ? 'Activo' : 'Inactivo' ?>
+                            </span>
+                        </td>
+                        <td>
+                            <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
-<!-- Modal para recarga rápida -->
-<div id="quickPaymentModal" class="modal" style="display: none;">
+<!-- Modales (fuera del contenedor de pestañas) -->
+<div id="quickPaymentModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal('quickPaymentModal')">&times;</span>
         <h3>Recargar saldo a <span id="member-name"></span></h3>
@@ -832,8 +840,7 @@ function toggleSection(sectionId, iconId) {
     </div>
 </div>
 
-<!-- Modal para productos -->
-<div id="productModal" class="modal" style="display: none;">
+<div id="productModal" class="modal">
     <div class="modal-content">
         <span class="close" onclick="closeModal('productModal')">&times;</span>
         <h3 id="product-modal-title">Agregar Producto/Servicio</h3>
@@ -871,18 +878,21 @@ function toggleSection(sectionId, iconId) {
 <script>
 // Funciones para las pestañas
 function openTab(evt, tabName) {
-    const tabContents = document.getElementsByClassName("tab-content");
-    for (let i = 0; i < tabContents.length; i++) {
-        tabContents[i].style.display = "none";
-    }
+    // Ocultar todos los contenidos de pestañas
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.remove('active');
+    });
     
-    const tabButtons = document.getElementsByClassName("tab-btn");
-    for (let i = 0; i < tabButtons.length; i++) {
-        tabButtons[i].className = tabButtons[i].className.replace(" active", "");
-    }
+    // Desactivar todos los botones de pestañas
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+        button.classList.remove('active');
+    });
     
-    document.getElementById(tabName).style.display = "block";
-    evt.currentTarget.className += " active";
+    // Mostrar la pestaña actual y activar el botón
+    document.getElementById(tabName).classList.add('active');
+    evt.currentTarget.classList.add('active');
 }
 
 // Mostrar/ocultar campo de productos según tipo de pago
@@ -914,12 +924,9 @@ function showProductModal(productId = 0) {
     const title = document.getElementById('product-modal-title');
     
     if (productId > 0) {
-        // Aquí deberías hacer una llamada AJAX para obtener los datos del producto
-        // y rellenar el formulario, o pasar los datos de otra forma
         title.textContent = 'Editar Producto';
         document.getElementById('product-id').value = productId;
-        // Ejemplo de cómo rellenar (deberías obtener los datos reales):
-        // document.querySelector('#product-form input[name="name"]').value = 'Nombre del producto';
+        // Aquí deberías cargar los datos existentes del producto
     } else {
         title.textContent = 'Agregar Producto/Servicio';
         document.getElementById('product-id').value = '';
@@ -935,41 +942,98 @@ function closeModal(modalId) {
 
 function confirmDeleteProduct(productId) {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
-        // Aquí deberías hacer una llamada AJAX o redireccionar para eliminar
         window.location.href = 'delete_product.php?id=' + productId;
     }
 }
 
 // Cerrar modales al hacer clic fuera
 window.onclick = function(event) {
-    if (event.target.className === 'modal') {
+    if (event.target.classList.contains('modal')) {
         event.target.style.display = 'none';
     }
 }
+
+// Inicializar la primera pestaña como activa
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelector('.tab-btn').click();
+});
 </script>
 
-<!-- <style>
-/* Estilos para los modales */
+<style>
+/* Estilos generales para pestañas */
+.tabs-container {
+    width: 100%;
+    margin: 0 auto;
+}
+
+.tabs {
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    color: #555;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.tab-btn:hover {
+    color: #333;
+}
+
+.tab-btn.active {
+    color: #2c7be5;
+    font-weight: bold;
+}
+
+.tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background-color: #2c7be5;
+}
+
+.tab-content {
+    display: none;
+    padding: 15px;
+    animation: fadeIn 0.3s;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Estilos para modales */
 .modal {
-    display: none; 
+    display: none;
     position: fixed;
     z-index: 1000;
     left: 0;
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.7);
+    background-color: rgba(0, 0, 0, 0.5);
+    overflow: auto;
 }
 
 .modal-content {
-    background-color: var(--bg-card);
+    background-color: #fefefe;
     margin: 5% auto;
     padding: 20px;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     position: relative;
-
 }
 
 .close {
@@ -981,39 +1045,122 @@ window.onclick = function(event) {
 }
 
 .close:hover {
-    color: var(--text-primary);
+    color: #333;
 }
 
-/* Estilos para las pestañas */
-.tabs {
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-    margin-bottom: 20px;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 10px 20px;
-    cursor: pointer;
-    color: var(--text-secondary);
-    font-weight: 500;
-    transition: all 0.3s;
-}
-
-.tab-btn.active {
-    color: var(--success);
-    border-bottom: 2px solid var(--success);
-}
-
-.tab-content {
-    display: none;
-    animation: fadeIn 0.3s;
-}
-
+/* Animación */
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-} -->
+}
+
+/* Estilos para la tabla */
+.table-responsive {
+    overflow-x: auto;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th, .data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+.data-table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.data-table tr:hover {
+    background-color: #f5f5f5;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-expired {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s;
+}
+
+.btn-primary {
+    background-color: #2c7be5;
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #1a68d1;
+}
+
+.btn-success {
+    background-color: #00a854;
+    color: white;
+}
+
+.btn-danger {
+    background-color: #f5222d;
+    color: white;
+}
+
+.btn-sm {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
+/* Estilos para formularios */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.form-group textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+</style>
 </style>
 </body>
 </html>

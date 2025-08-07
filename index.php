@@ -574,7 +574,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
           ?>
             <tr>
              <td>
-    <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
+    <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
         <?= htmlspecialchars($m['name']) ?>
     </a>
 </td>
@@ -647,7 +647,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
 
             <tr>
               <td>
-    <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
+    <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
         <?= htmlspecialchars($m['name']) ?>
     </a>
 </td>

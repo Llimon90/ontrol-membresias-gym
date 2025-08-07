@@ -546,9 +546,10 @@ if ($member_id) {
         </table>
     </div>
     
-    <a href="payment_history.php?member_id=<?= $member_id ?>" class="btn btn-primary" style="margin-top: 15px;">
-        <i class="fas fa-list"></i> Ver Historial Completo
-    </a>
+ <!-- // Asegúrate de que $member_id esté definido correctamente --> 
+<a href="payment_history.php?member_id=<?= (int)$member['id'] ?>" class="btn btn-primary">
+    <i class="fas fa-list"></i> Ver Historial Completo
+</a>
 </div>
 
 

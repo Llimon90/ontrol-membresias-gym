@@ -947,7 +947,8 @@ window.onclick = function(event) {
     }
 }
 </script>
-<style>
+
+<!-- <style>
 /* Estilos para los modales */
 .modal {
     display: none; 
@@ -1012,7 +1013,7 @@ window.onclick = function(event) {
 @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
-}
+} -->
 </style>
 </body>
 </html>

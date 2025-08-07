@@ -573,7 +573,11 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
             $days_left = $interval->days;
           ?>
             <tr>
-              <td><?= htmlspecialchars($m['name']) ?></td>
+              <td>
+                <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link">
+                  <?= htmlspecialchars($m['name']) ?>
+                </a>
+              </td>
               <td><?= htmlspecialchars($m['membership_name']) ?></td>
               <td>
                 <span class="status-badge status-expiring">
@@ -638,7 +642,11 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
             $days_expired = $interval->days;
           ?>
             <tr>
-              <td><?= htmlspecialchars($m['name']) ?></td>
+              <td>
+                <a href="ver_perfil.php?id=<?= $m['id'] ?>" class="member-profile-link">
+                  <?= htmlspecialchars($m['name']) ?>
+                </a>
+              </td>
               <td><?= htmlspecialchars($m['membership_name']) ?></td>
               <td>
                 <span class="status-badge status-expired">
@@ -666,7 +674,6 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
     </div>
   </div>
 </div>
-
 <!-- JavaScript mínimo para mostrar/ocultar -->
 <script>
 function toggleSection(sectionId, iconId) {

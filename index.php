@@ -698,59 +698,291 @@ function toggleSection(sectionId, iconId) {
 
 <!-- Sección de Saldo y Pagos -->
 <div class="card">
-    <h2 class="card-title"><i class="fas fa-wallet"></i> Gestión de Pagos y Saldos</h2>
-    
-    <div class="tabs" style="margin-bottom: 20px;">
-        <button class="tab-btn active" id="balance-tab-btn">Saldos</button>
-        <button class="tab-btn" id="payment-tab-btn">Registrar Pago</button>
-        <button class="tab-btn" id="products-tab-btn">Productos/Servicios</button>
-    </div>
-    
-    <!-- Contenido de las pestañas -->
-    <div id="balance-tab" class="tab-content" style="display: block;">
-        <!-- Contenido de Saldos... -->
-    </div>
-    
-    <div id="payment-tab" class="tab-content" style="display: none;">
-        <!-- Contenido de Registrar Pago... -->
-    </div>
-    
-    <div id="products-tab" class="tab-content" style="display: none;">
-        <!-- Contenido de Productos/Servicios... -->
-    </div>
+  <h2 class="card-title"><i class="fas fa-wallet"></i> Gestión de Pagos y Saldos</h2>
+
+  <div class="tabs" style="margin-bottom: 20px;">
+    <button class="tab-btn active" onclick="openTab(event, 'balance-tab')" id="default-tab">Saldos</button>
+    <button class="tab-btn" onclick="openTab(event, 'payment-tab')">Registrar Pago</button>
+    <button class="tab-btn" onclick="openTab(event, 'products-tab')">Productos/Servicios</button>
+  </div>
+
+  <!-- Tab de Saldos -->
+  <div id="balance-tab" class="tab-content" style="display: block;">
+    <table>
+      <thead>
+        <tr>
+          <th>Miembro</th>
+          <th>Saldo Actual</th>
+          <th>Última Actualización</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php
+        $balances = $pdo->query("SELECT m.name, mb.balance, mb.last_updated, m.id 
+                                  FROM member_balances mb
+                                  JOIN members m ON mb.member_id = m.id
+                                  ORDER BY mb.last_updated DESC")->fetchAll(PDO::FETCH_ASSOC);
+        foreach($balances as $balance): ?>
+        <tr>
+          <td><?= htmlspecialchars($balance['name']) ?></td>
+          <td>$<?= number_format($balance['balance'], 2) ?></td>
+          <td><?= date('d/m/Y H:i', strtotime($balance['last_updated'])) ?></td>
+          <td>
+            <a href="#" onclick="showPaymentForm(<?= $balance['id'] ?>, '<?= htmlspecialchars($balance['name']) ?>')" class="btn btn-success btn-sm">
+              <i class="fas fa-money-bill-wave"></i> Recargar
+            </a>
+            <a href="payment_history.php?member_id=<?= $balance['id'] ?>" class="btn btn-primary btn-sm">
+              <i class="fas fa-history"></i> Historial
+            </a>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Tab de Registrar Pago -->
+  <div id="payment-tab" class="tab-content" style="display: none;">
+    <form id="payment-form" method="post" action="process_payment.php">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Miembro *</label>
+          <select name="member_id" id="payment-member" required>
+            <option value="">Seleccionar miembro...</option>
+            <?php foreach($members as $m): ?>
+            <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['name']) ?> (<?= htmlspecialchars($m['phone']) ?>)</option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de Pago *</label>
+          <select name="payment_type" id="payment-type-select" required>
+            <option value="membresia">Membresía</option>
+            <option value="producto">Producto/Servicio</option>
+            <option value="recarga">Recarga de Saldo</option>
+          </select>
+        </div>
+
+        <div class="form-group" id="product-group" style="display: none;">
+          <label>Producto/Servicio</label>
+          <select name="product_id" id="product-select">
+            <option value="">Seleccionar producto...</option>
+            <?php
+            $products = $pdo->query("SELECT * FROM gym_products WHERE is_active = TRUE")->fetchAll(PDO::FETCH_ASSOC);
+            foreach($products as $p): ?>
+            <option value="<?= $p['id'] ?>" data-price="<?= $p['price'] ?>">
+              <?= htmlspecialchars($p['name']) ?> ($<?= number_format($p['price'], 2) ?>)
+            </option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Monto *</label>
+          <input type="number" name="amount" id="payment-amount" step="0.01" min="0" required>
+        </div>
+
+        <div class="form-group">
+          <label>Método de Pago *</label>
+          <select name="payment_method" required>
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="transferencia">Transferencia</option>
+            <option value="otros">Otros</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>Referencia/Descripción</label>
+          <input type="text" name="description" id="payment-description" placeholder="Ej: Pago mensualidad enero">
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Registrar Pago
+      </button>
+    </form>
+  </div>
+
+  <!-- Tab de Productos/Servicios -->
+  <div id="products-tab" class="tab-content" style="display: none;">
+    <button class="btn btn-success" style="margin-bottom: 15px;" onclick="showProductModal()">
+      <i class="fas fa-plus"></i> Agregar Producto/Servicio
+    </button>
+    <table>
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Precio</th>
+          <th>Estado</th>
+          <th>Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        <?php foreach($products as $p): ?>
+        <tr>
+          <td><?= htmlspecialchars($p['name']) ?></td>
+          <td><?= htmlspecialchars($p['description']) ?></td>
+          <td>$<?= number_format($p['price'], 2) ?></td>
+          <td>
+            <span class="status-badge <?= $p['is_active'] ? 'status-active' : 'status-expired' ?>">
+              <?= $p['is_active'] ? 'Activo' : 'Inactivo' ?>
+            </span>
+          </td>
+          <td>
+            <button class="btn btn-primary btn-sm" onclick="editProduct(<?= $p['id'] ?>)">
+              <i class="fas fa-edit"></i>
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDeleteProduct(<?= $p['id'] ?>)">
+              <i class="fas fa-trash"></i>
+            </button>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal para recarga rápida -->
+<div id="quickPaymentModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('quickPaymentModal')">&times;</span>
+    <h3>Recargar saldo a <span id="member-name"></span></h3>
+    <form id="quick-payment-form" method="post" action="process_payment.php">
+      <input type="hidden" name="member_id" id="quick-member-id">
+      <input type="hidden" name="payment_type" value="recarga">
+      <div class="form-group">
+        <label>Monto *</label>
+        <input type="number" name="amount" step="0.01" min="0" required>
+      </div>
+      <div class="form-group">
+        <label>Método de Pago *</label>
+        <select name="payment_method" required>
+          <option value="efectivo">Efectivo</option>
+          <option value="tarjeta">Tarjeta</option>
+          <option value="transferencia">Transferencia</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-money-bill-wave"></i> Recargar Saldo
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal para productos -->
+<div id="productModal" class="modal" style="display: none;">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal('productModal')">&times;</span>
+    <h3 id="product-modal-title">Agregar Producto/Servicio</h3>
+    <form id="product-form" method="post" action="process_product.php">
+      <input type="hidden" name="product_id" id="product-id">
+      <div class="form-group">
+        <label>Nombre *</label>
+        <input type="text" name="name" required>
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea name="description" rows="3"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Precio *</label>
+        <input type="number" name="price" step="0.01" min="0" required>
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" name="is_active" checked> Activo
+        </label>
+      </div>
+      <button type="submit" class="btn btn-primary">
+        <i class="fas fa-save"></i> Guardar Producto
+      </button>
+    </form>
+  </div>
 </div>
 
 <script>
-// Función para cambiar pestañas
-function switchTab(tabName) {
-    // Ocultar todos los contenidos
-    document.querySelectorAll('.tab-content').forEach(content => {
-        content.style.display = 'none';
-    });
-    
-    // Desactivar todos los botones
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
-    });
-    
-    // Mostrar el contenido seleccionado
-    document.getElementById(tabName).style.display = 'block';
-    
-    // Activar el botón correspondiente
-    document.getElementById(`${tabName}-btn`).classList.add('active');
+function openTab(evt, tabName) {
+  const tabContents = document.getElementsByClassName("tab-content");
+  Array.from(tabContents).forEach(tc => tc.style.display = "none");
+
+  const tabButtons = document.getElementsByClassName("tab-btn");
+  Array.from(tabButtons).forEach(btn => btn.classList.remove("active"));
+
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.classList.add("active");
 }
 
-// Asignar eventos a los botones de pestaña
-document.getElementById('balance-tab-btn').addEventListener('click', () => switchTab('balance-tab'));
-document.getElementById('payment-tab-btn').addEventListener('click', () => switchTab('payment-tab'));
-document.getElementById('products-tab-btn').addEventListener('click', () => switchTab('products-tab'));
+window.addEventListener("DOMContentLoaded", function() {
+  const paymentTypeSelect = document.getElementById('payment-type-select');
+  const productGroup = document.getElementById('product-group');
+  const productSelect = document.getElementById('product-select');
+  const amountInput = document.getElementById('payment-amount');
+  const descriptionInput = document.getElementById('payment-description');
 
-// Inicializar la pestaña activa al cargar
-document.addEventListener('DOMContentLoaded', () => {
-    switchTab('balance-tab');
+  paymentTypeSelect.addEventListener('change', function() {
+    if (this.value === 'producto') {
+      productGroup.style.display = 'block';
+    } else {
+      productGroup.style.display = 'none';
+      amountInput.value = '';
+      descriptionInput.value = '';
+    }
+  });
+
+  if (productSelect) {
+    productSelect.addEventListener('change', function() {
+      if (this.value) {
+        const selectedOption = this.options[this.selectedIndex];
+        amountInput.value = selectedOption.getAttribute('data-price');
+        descriptionInput.value = 'Compra de ' + selectedOption.text.split('($')[0].trim();
+      }
+    });
+  }
+
+  document.getElementById('default-tab').click();
 });
 
-// Resto de tus funciones JavaScript...
+function showPaymentForm(memberId, memberName) {
+  document.getElementById('quick-member-id').value = memberId;
+  document.getElementById('member-name').textContent = memberName;
+  document.getElementById('quickPaymentModal').style.display = 'block';
+}
+
+function showProductModal(productId = 0) {
+  const modal = document.getElementById('productModal');
+  const title = document.getElementById('product-modal-title');
+
+  if (productId > 0) {
+    title.textContent = 'Editar Producto';
+    document.getElementById('product-id').value = productId;
+  } else {
+    title.textContent = 'Agregar Producto/Servicio';
+    document.getElementById('product-id').value = '';
+    document.getElementById('product-form').reset();
+  }
+  modal.style.display = 'block';
+}
+
+function closeModal(modalId) {
+  document.getElementById(modalId).style.display = 'none';
+}
+
+function confirmDeleteProduct(productId) {
+  if (confirm('¿Estás seguro de eliminar este producto?')) {
+    window.location.href = 'delete_product.php?id=' + productId;
+  }
+}
+
+window.onclick = function(event) {
+  if (event.target.className === 'modal') {
+    event.target.style.display = 'none';
+  }
+};
 </script>
 
 <style>

@@ -1002,7 +1002,7 @@ function confirmDeleteProduct(productId) {
 // Función para eliminar producto (después de confirmación)
 function deleteProduct() {
     if(productToDelete) {
-        window.location.href = 'backend/delete_product.php?id=' + productToDelete;
+        window.location.href = '../backend/delete_product.php?id=' + productToDelete;
     }
 }
 

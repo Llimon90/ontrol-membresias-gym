@@ -9,12 +9,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $is_active = isset($_POST['is_active']) ? 1 : 0;
     
     if ($product_id > 0) {
+      
+      
+      
         // Actualizar producto existente
         $stmt = $pdo->prepare("UPDATE gym_products 
                               SET name = ?, description = ?, price = ?, is_active = ? 
                               WHERE id = ?");
         $stmt->execute([$name, $description, $price, $is_active, $product_id]);
     } else {
+
+
+        
         // Crear nuevo producto
         $stmt = $pdo->prepare("INSERT INTO gym_products 
                               (name, description, price, is_active) 

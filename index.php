@@ -934,19 +934,28 @@ function openTab(evt, tabName) {
     evt.currentTarget.className += " active";
 }
 
-// Mostrar/ocultar campo de productos según tipo de pago
+
+// Mostrar/ocultar campo de producto según tipo de pago
 document.querySelector('select[name="payment_type"]').addEventListener('change', function() {
     const productGroup = document.getElementById('product-group');
-    productGroup.style.display = this.value === 'producto' ? 'block' : 'none';
+    const productSelect = document.querySelector('select[name="product_id"]');
+    const amountInput = document.querySelector('input[name="amount"]');
     
-    // Si selecciona producto, actualizar el monto automáticamente
     if (this.value === 'producto') {
-        document.querySelector('select[name="product_id"]').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value) {
-                document.querySelector('input[name="amount"]').value = selectedOption.getAttribute('data-price');
+        productGroup.style.display = 'block';
+        productSelect.required = true;
+        
+        // Actualizar monto al seleccionar producto
+        productSelect.addEventListener('change', function() {
+            if (this.value) {
+                const selectedOption = this.options[this.selectedIndex];
+                amountInput.value = selectedOption.getAttribute('data-price');
             }
         });
+    } else {
+        productGroup.style.display = 'none';
+        productSelect.required = false;
+        amountInput.value = ''; // Resetear monto
     }
 });
 
@@ -957,45 +966,20 @@ function showPaymentForm(memberId, memberName) {
     document.getElementById('quickPaymentModal').style.display = 'block';
 }
 
-// Modal para productos
-function showProductModal(productId = 0) {
-    const modal = document.getElementById('productModal');
-    const title = document.getElementById('product-modal-title');
-    
-    if (productId > 0) {
-        // Aquí deberías hacer una llamada AJAX para obtener los datos del producto
-        // y rellenar el formulario, o pasar los datos de otra forma
-        title.textContent = 'Editar Producto';
-        document.getElementById('product-id').value = productId;
-        // Ejemplo de cómo rellenar (deberías obtener los datos reales):
-        // document.querySelector('#product-form input[name="name"]').value = 'Nombre del producto';
-    } else {
-        title.textContent = 'Agregar Producto/Servicio';
-        document.getElementById('product-id').value = '';
-        document.getElementById('product-form').reset();
-    }
-    
-    modal.style.display = 'block';
-}
-
+// Cerrar modales
 function closeModal(modalId) {
     document.getElementById(modalId).style.display = 'none';
 }
 
-function confirmDeleteProduct(productId) {
-    if (confirm('¿Estás seguro de eliminar este producto?')) {
-        // Aquí deberías hacer una llamada AJAX o redireccionar para eliminar
-        window.location.href = 'delete_product.php?id=' + productId;
-    }
-}
-
-// Cerrar modales al hacer clic fuera
+// Cerrar al hacer clic fuera
 window.onclick = function(event) {
     if (event.target.className === 'modal') {
         event.target.style.display = 'none';
     }
 }
 </script>
+
+
 
 <style>
 /* Estilos para los modales */

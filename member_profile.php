@@ -377,6 +377,58 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         grid-template-columns: 1fr;
       }
     }
+
+    /* Estilos para el modal */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    .modal-content {
+      background-color: var(--bg-card);
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 80%;
+      max-width: 500px;
+    }
+
+    .close-modal {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close-modal:hover {
+      color: var(--danger);
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    .form-group input, 
+    .form-group select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.1);
+      background-color: rgba(255,255,255,0.05);
+      color: white;
+    }
   </style>
 </head>
 <body>
@@ -411,9 +463,9 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       <div class="info-card">
         <h3>Saldo Actual</h3>
         <div class="value">$<?= number_format($balance, 2) ?></div>
-        <a href="#" class="btn btn-success btn-sm" style="margin-top: 10px;">
+        <button class="btn btn-success btn-sm" style="margin-top: 10px;" onclick="openRechargeModal()">
           <i class="fas fa-money-bill-wave"></i> Recargar Saldo
-        </a>
+        </button>
       </div>
       
       <div class="info-card">
@@ -444,114 +496,87 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       </div>
     </div>
 
-    <?php
-// Al inicio del archivo, antes de cualquier HTML
-require 'backend/config.php';
-
-// Mostrar mensajes de éxito/error
-if (isset($_GET['renewal_success'])) {
-    echo '<div class="alert alert-success">Membresía renovada exitosamente!</div>';
-} elseif (isset($_GET['error'])) {
-    echo '<div class="alert alert-danger">Error: '.htmlspecialchars($_GET['error']).'</div>';
-}
-
-// Obtener datos del miembro
-$member_id = $_GET['member_id'] ?? null;
-if ($member_id) {
-    $stmt = $pdo->prepare("SELECT m.*, ms.duration_days FROM members m JOIN memberships ms ON m.membership_id = ms.id WHERE m.id = ?");
-    $stmt->execute([$member_id]);
-    $member = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-    // Obtener últimos pagos
-    $stmt = $pdo->prepare("SELECT * FROM payments WHERE member_id = ? ORDER BY payment_date DESC LIMIT 5");
-    $stmt->execute([$member_id]);
-    $payments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-}
-?>
-
-<!-- Detalles de membresía -->
-<div class="card">
-    <h2 class="card-title"><i class="fas fa-id-card"></i> Detalles de Membresía</h2>
-    
-    <div class="info-grid">
+    <!-- Detalles de membresía -->
+    <div class="card">
+      <h2 class="card-title"><i class="fas fa-id-card"></i> Detalles de Membresía</h2>
+      
+      <div class="info-grid">
         <div>
-            <h3>Fecha de Inicio</h3>
-            <p><?= date('d/m/Y', strtotime($member['start_date'])) ?></p>
+          <h3>Fecha de Inicio</h3>
+          <p><?= date('d/m/Y', strtotime($member['start_date'])) ?></p>
         </div>
         
         <div>
-            <h3>Fecha de Vencimiento</h3>
-            <p><?= date('d/m/Y', strtotime($member['end_date'])) ?></p>
+          <h3>Fecha de Vencimiento</h3>
+          <p><?= date('d/m/Y', strtotime($member['end_date'])) ?></p>
         </div>
         
         <div>
-            <h3>Duración Total</h3>
-            <p>
-                <?= $member['duration_days'] ?> día<?= $member['duration_days'] != 1 ? 's' : '' ?>
-                (<?= floor($member['duration_days']/30) ?> mes<?= floor($member['duration_days']/30) != 1 ? 'es' : '' ?>)
-            </p>
+          <h3>Duración Total</h3>
+          <p>
+            <?= $member['duration_days'] ?> día<?= $member['duration_days'] != 1 ? 's' : '' ?>
+            (<?= floor($member['duration_days']/30) ?> mes<?= floor($member['duration_days']/30) != 1 ? 'es' : '' ?>)
+          </p>
         </div>
         
         <div>
-            <h3>Acciones</h3>
-            <div class="actions">
-                <form method="post" action="process_payment.php" style="display: inline;">
-                    <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-                    <input type="hidden" name="renew_membership" value="1">
-                    <button type="submit" class="btn btn-primary btn-sm" 
-                            onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime($member['end_date'] . " + {$member['duration_days']} days")) ?>')">
-                        <i class="fas fa-sync-alt"></i> Renovar
-                    </button>
-                </form>
-                <a href="#" class="btn btn-success btn-sm">
-                    <i class="fas fa-print"></i> Imprimir
-                </a>
-            </div>
+          <h3>Acciones</h3>
+          <div class="actions">
+            <form method="post" action="process_payment.php" style="display: inline;">
+              <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+              <input type="hidden" name="renew_membership" value="1">
+              <button type="submit" class="btn btn-primary btn-sm" 
+                      onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime($member['end_date'] . " + {$member['duration_days']} days")) ?>')">
+                <i class="fas fa-sync-alt"></i> Renovar
+              </button>
+            </form>
+            <a href="#" class="btn btn-success btn-sm">
+              <i class="fas fa-print"></i> Imprimir
+            </a>
+          </div>
         </div>
+      </div>
     </div>
-</div>
 
-<!-- Historial de pagos -->
-<div class="card">
-    <h2 class="card-title"><i class="fas fa-history"></i> Últimos Pagos</h2>
-    
-    <div class="table-responsive">
+    <!-- Historial de pagos -->
+    <div class="card">
+      <h2 class="card-title"><i class="fas fa-history"></i> Últimos Pagos</h2>
+      
+      <div class="table-responsive">
         <table>
-            <thead>
-                <tr>
-                    <th>Fecha</th>
-                    <th>Monto</th>
-                    <th>Tipo</th>
-                    <th>Método</th>
-                    <th>Descripción</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach($payments as $payment): ?>
-                <tr>
-                    <td><?= date('d/m/Y H:i', strtotime($payment['payment_date'])) ?></td>
-                    <td>$<?= number_format($payment['amount'], 2) ?></td>
-                    <td><?= ucfirst($payment['payment_type']) ?></td>
-                    <td><?= ucfirst($payment['payment_method']) ?></td>
-                    <td><?= htmlspecialchars($payment['description']) ?></td>
-                </tr>
-                <?php endforeach; ?>
-                
-                <?php if (empty($payments)): ?>
-                <tr>
-                    <td colspan="5" style="text-align: center;">No hay registros de pagos</td>
-                </tr>
-                <?php endif; ?>
-            </tbody>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Monto</th>
+              <th>Tipo</th>
+              <th>Método</th>
+              <th>Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            <?php foreach($payments as $payment): ?>
+            <tr>
+              <td><?= date('d/m/Y H:i', strtotime($payment['payment_date'])) ?></td>
+              <td>$<?= number_format($payment['amount'], 2) ?></td>
+              <td><?= ucfirst($payment['payment_type']) ?></td>
+              <td><?= ucfirst($payment['payment_method']) ?></td>
+              <td><?= htmlspecialchars($payment['description']) ?></td>
+            </tr>
+            <?php endforeach; ?>
+            
+            <?php if (empty($payments)): ?>
+            <tr>
+              <td colspan="5" style="text-align: center;">No hay registros de pagos</td>
+            </tr>
+            <?php endif; ?>
+          </tbody>
         </table>
+      </div>
+      
+      <a href="payment_history.php?member_id=<?= (int)$member['id'] ?>" class="btn btn-primary">
+        <i class="fas fa-list"></i> Ver Historial Completo
+      </a>
     </div>
-    
- <!-- // Asegúrate de que $member_id esté definido correctamente --> 
-<a href="payment_history.php?member_id=<?= (int)$member['id'] ?>" class="btn btn-primary">
-    <i class="fas fa-list"></i> Ver Historial Completo
-</a>
-</div>
-
 
     <!-- Productos adquiridos -->
     <div class="card">
@@ -590,15 +615,20 @@ if ($member_id) {
       <h2 class="card-title"><i class="fas fa-bolt"></i> Acciones Rápidas</h2>
       
       <div class="actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
-        <a href="#" class="btn btn-success">
-          <i class="fas fa-money-bill-wave"></i> Registrar Pago
-        </a>
+        <button class="btn btn-success" onclick="openRechargeModal()">
+          <i class="fas fa-money-bill-wave"></i> Recargar Saldo
+        </button>
         <a href="edit_member.php?id=<?= $member_id ?>" class="btn btn-primary">
           <i class="fas fa-edit"></i> Editar Perfil
         </a>
-        <a href="#" class="btn btn-danger">
-          <i class="fas fa-envelope"></i> Enviar Recordatorio
-        </a>
+        <form method="post" action="process_payment.php" style="display: inline;">
+          <input type="hidden" name="member_id" value="<?= $member_id ?>">
+          <input type="hidden" name="renew_membership" value="1">
+          <button type="submit" class="btn btn-primary" 
+                  onclick="return confirm('¿Confirmar renovación de membresía?')">
+            <i class="fas fa-sync-alt"></i> Renovar Membresía
+          </button>
+        </form>
         <a href="#" class="btn btn-primary">
           <i class="fas fa-qrcode"></i> Generar QR
         </a>
@@ -606,41 +636,67 @@ if ($member_id) {
     </div>
   </div>
 
-  <script>
-  // Mostrar mensaje de éxito si se renovó
-  <?php if (isset($_GET['success']) && $_GET['success'] === 'membership_renewed'): ?>
-    alert('Membresía renovada exitosamente. Nueva fecha de vencimiento: <?= date('d/m/Y', strtotime($member['end_date'])) ?>');
-    window.history.replaceState({}, document.title, window.location.pathname + '?id=<?= $member_id ?>');
-  <?php endif; ?>
+  <!-- Modal para recarga -->
+  <div id="rechargeModal" class="modal">
+    <div class="modal-content">
+      <span class="close-modal" onclick="closeRechargeModal()">&times;</span>
+      <h3>Recargar Saldo</h3>
+      <form method="post" action="process_payment.php">
+        <input type="hidden" name="member_id" value="<?= $member_id ?>">
+        <input type="hidden" name="payment_type" value="recarga">
+        
+        <div class="form-group">
+          <label>Monto:</label>
+          <input type="number" name="amount" step="0.01" min="1" required>
+        </div>
+        
+        <div class="form-group">
+          <label>Método de Pago:</label>
+          <select name="payment_method" required>
+            <option value="efectivo">Efectivo</option>
+            <option value="tarjeta">Tarjeta</option>
+            <option value="transferencia">Transferencia</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label>Descripción (opcional):</label>
+          <input type="text" name="description" placeholder="Ej: Recarga de saldo">
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Confirmar Recarga</button>
+      </form>
+    </div>
+  </div>
 
-  // Funcionalidad para recargar saldo
-  document.querySelector('.btn-success').addEventListener('click', function(e) {
-    e.preventDefault();
-    const amount = prompt('Ingrese el monto a recargar:');
-    if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
-      // Aquí deberías hacer una llamada AJAX para procesar la recarga
-      fetch('process_payment.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: `member_id=<?= $member_id ?>&amount=${amount}&type=recarga`
-      })
-      .then(response => response.json())
-      .then(data => {
-        if(data.success) {
-          alert(`Recarga de $${amount} realizada con éxito`);
-          location.reload();
-        } else {
-          alert('Error: ' + data.message);
-        }
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('Ocurrió un error al procesar la recarga');
-      });
+  <script>
+    // Funciones para manejar el modal
+    function openRechargeModal() {
+      document.getElementById('rechargeModal').style.display = 'block';
     }
-  });
+
+    function closeRechargeModal() {
+      document.getElementById('rechargeModal').style.display = 'none';
+    }
+
+    // Cerrar modal al hacer clic fuera
+    window.onclick = function(event) {
+      if (event.target == document.getElementById('rechargeModal')) {
+        closeRechargeModal();
+      }
+    }
+
+    // Mostrar mensaje de éxito si se renovó
+    <?php if (isset($_GET['success']) && $_GET['success'] === 'membership_renewed'): ?>
+      alert('Membresía renovada exitosamente. Nueva fecha de vencimiento: <?= date('d/m/Y', strtotime($member['end_date'])) ?>');
+      window.history.replaceState({}, document.title, window.location.pathname + '?id=<?= $member_id ?>');
+    <?php endif; ?>
+
+    // Mostrar mensaje de éxito si se realizó un pago
+    <?php if (isset($_GET['payment_success'])): ?>
+      alert('Operación realizada con éxito');
+      window.history.replaceState({}, document.title, window.location.pathname + '?id=<?= $member_id ?>');
+    <?php endif; ?>
   </script>
 </body>
 </html>

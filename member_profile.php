@@ -4,7 +4,7 @@ require 'backend/config.php';
 $member_id = $_GET['id'] ?? 0;
 
 // Obtener información básica del miembro con duración de membresía
-$member = $pdo->prepare("SELECT m.*, ms.name AS membership_name, ms.duration_days, ms.price 
+$member = $pdo->prepare("SELECT m.*, ms.name AS membership_name, ms.duration_days 
                         FROM members m 
                         JOIN memberships ms ON m.membership_id = ms.id 
                         WHERE m.id = ?");
@@ -21,60 +21,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['renew_membership'])) 
     $today = new DateTime();
     $duration_days = $member['duration_days'];
     
-    // Validar datos del formulario
-    $required_fields = ['amount', 'payment_method', 'payment_type', 'description'];
-    foreach ($required_fields as $field) {
-        if (empty($_POST[$field])) {
-            die("Error: El campo $field es requerido.");
-        }
-    }
-    
     // Calcular nueva fecha de vencimiento
     $new_end_date = clone $today;
     $new_end_date->add(new DateInterval("P{$duration_days}D"));
     
-    try {
-        $pdo->beginTransaction();
-        
-        // Actualizar la membresía
-        $stmt = $pdo->prepare("UPDATE members SET start_date = ?, end_date = ? WHERE id = ?");
-        $stmt->execute([
-            $today->format('Y-m-d'),
-            $new_end_date->format('Y-m-d'),
-            $member_id
-        ]);
-        
-        // Registrar el pago con todos los datos del formulario
-        $stmt = $pdo->prepare("
-            INSERT INTO payments (
-                member_id, 
-                amount, 
-                payment_method, 
-                payment_type, 
-                description,
-                payment_date
-            ) VALUES (?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $member_id,
-            $_POST['amount'],
-            $_POST['payment_method'],
-            $_POST['payment_type'],
-            $_POST['description'],
-            $today->format('Y-m-d H:i:s')
-        ]);
-        
-        $pdo->commit();
-        
-        // Redirigir para evitar reenvío del formulario
-        header("Location: member_profile.php?id=$member_id&success=membership_renewed");
-        exit;
-        
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        die("Error al procesar la renovación: " . $e->getMessage());
-    }
+    // Actualizar en la base de datos
+    $stmt = $pdo->prepare("UPDATE members SET start_date = ?, end_date = ? WHERE id = ?");
+    $stmt->execute([
+        $today->format('Y-m-d'),
+        $new_end_date->format('Y-m-d'),
+        $member_id
+    ]);
+    
+    // Registrar el pago de renovación
+    $stmt = $pdo->prepare("INSERT INTO payments (member_id, amount, payment_date, payment_type, description) 
+                          VALUES (?, ?, ?, ?, ?)");
+    $stmt->execute([
+        $member_id,
+        0, // Monto - ajustar según tu lógica de precios
+        $today->format('Y-m-d H:i:s'),
+        'membresia',
+        'Renovación automática de membresía ' . $member['membership_name']
+    ]);
+    
+    // Redirigir para evitar reenvío del formulario
+    header("Location: member_profile.php?id=$member_id&success=membership_renewed");
+    exit;
 }
+
 
 // Obtener saldo actual
 $balance = $pdo->prepare("SELECT balance FROM member_balances WHERE member_id = ?");
@@ -448,40 +422,13 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
     }
 
     .form-group input, 
-    .form-group select,
-    .form-group textarea {
+    .form-group select {
       width: 100%;
       padding: 8px;
       border-radius: 4px;
       border: 1px solid rgba(255,255,255,0.1);
       background-color: rgba(255,255,255,0.05);
       color: white;
-    }
-
-    /* Estilos específicos para el modal de renovación */
-    .modal-header {
-      background-color: var(--success);
-      color: white;
-      border-bottom: none;
-      border-radius: 8px 8px 0 0;
-      padding: 15px 20px;
-    }
-
-    .modal-title {
-      margin: 0;
-      font-size: 18px;
-    }
-
-    .modal-body {
-      padding: 20px;
-    }
-
-    .modal-footer {
-      padding: 15px 20px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
     }
   </style>
 </head>
@@ -576,9 +523,14 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         <div>
           <h3>Acciones</h3>
           <div class="actions">
-            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#renewModal">
-              <i class="fas fa-sync-alt"></i> Renovar
-            </button>
+            <form method="post" action="process_payment.php" style="display: inline;">
+              <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
+              <input type="hidden" name="renew_membership" value="1">
+              <button type="submit" class="btn btn-primary btn-sm" 
+                      onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime($member['end_date'] . " + {$member['duration_days']} days")) ?>')">
+                <i class="fas fa-sync-alt"></i> Renovar
+              </button>
+            </form>
             <a href="#" class="btn btn-success btn-sm">
               <i class="fas fa-print"></i> Imprimir
             </a>
@@ -670,9 +622,14 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         <a href="edit_member.php?id=<?= $member_id ?>" class="btn btn-primary">
           <i class="fas fa-edit"></i> Editar Perfil
         </a>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#renewModal">
-          <i class="fas fa-sync-alt"></i> Renovar Membresía
-        </button>
+        <form method="post" action="process_payment.php" style="display: inline;">
+          <input type="hidden" name="member_id" value="<?= $member_id ?>">
+          <input type="hidden" name="renew_membership" value="1">
+          <button type="submit" class="btn btn-primary" 
+                  onclick="return confirm('¿Confirmar renovación de membresía?')">
+            <i class="fas fa-sync-alt"></i> Renovar Membresía
+          </button>
+        </form>
         <a href="#" class="btn btn-primary">
           <i class="fas fa-qrcode"></i> Generar QR
         </a>
@@ -713,59 +670,8 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
     </div>
   </div>
 
-  <!-- Modal para renovación -->
-  <div id="renewModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Renovar Membresía</h5>
-        <span class="close-modal" onclick="closeRenewModal()">&times;</span>
-      </div>
-      <form method="post" action="member_profile.php?id=<?= $member_id ?>">
-        <div class="modal-body">
-          <input type="hidden" name="renew_membership" value="1">
-          
-          <div class="form-group">
-            <label for="amount">Monto de Pago</label>
-            <input type="number" step="0.01" class="form-control" id="amount" name="amount" 
-                   value="<?= $member['price'] ?? 0 ?>" required>
-          </div>
-          
-          <div class="form-group">
-            <label for="payment_method">Método de Pago</label>
-            <select class="form-select" id="payment_method" name="payment_method" required>
-              <option value="">Seleccione...</option>
-              <option value="efectivo">Efectivo</option>
-              <option value="tarjeta">Tarjeta</option>
-              <option value="transferencia">Transferencia</option>
-              <option value="otro">Otro</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label for="payment_type">Tipo de Pago</label>
-            <input type="text" class="form-control" id="payment_type" name="payment_type" value="membresia" readonly>
-          </div>
-          
-          <div class="form-group">
-            <label for="description">Descripción</label>
-            <textarea class="form-control" id="description" name="description" rows="3" required><?= 'Renovación de membresía ' . htmlspecialchars($member['membership_name']) ?></textarea>
-          </div>
-          
-          <p class="text-muted">Nueva fecha de vencimiento: <?= date('d/m/Y', strtotime($member['end_date'] . " + {$member['duration_days']} days")) ?></p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeRenewModal()">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Confirmar Renovación</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Bootstrap JS (necesario para los modales) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-  
   <script>
-    // Funciones para manejar el modal de recarga
+    // Funciones para manejar el modal
     function openRechargeModal() {
       document.getElementById('rechargeModal').style.display = 'block';
     }
@@ -774,22 +680,10 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       document.getElementById('rechargeModal').style.display = 'none';
     }
 
-    // Funciones para manejar el modal de renovación
-    function openRenewModal() {
-      document.getElementById('renewModal').style.display = 'block';
-    }
-
-    function closeRenewModal() {
-      document.getElementById('renewModal').style.display = 'none';
-    }
-
-    // Cerrar modales al hacer clic fuera
+    // Cerrar modal al hacer clic fuera
     window.onclick = function(event) {
       if (event.target == document.getElementById('rechargeModal')) {
         closeRechargeModal();
-      }
-      if (event.target == document.getElementById('renewModal')) {
-        closeRenewModal();
       }
     }
 
@@ -804,14 +698,6 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       alert('Operación realizada con éxito');
       window.history.replaceState({}, document.title, window.location.pathname + '?id=<?= $member_id ?>');
     <?php endif; ?>
-
-    // Inicializar tooltips de Bootstrap
-    document.addEventListener('DOMContentLoaded', function() {
-      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-      });
-    });
   </script>
 </body>
 </html>

@@ -521,20 +521,19 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
         </div>
         
         <div>
-          <h3>Acciones</h3>
-          <div class="actions">
-            <form method="post" action="process_payment.php" style="display: inline;">
-              <input type="hidden" name="member_id" value="<?= $member['id'] ?>">
-              <input type="hidden" name="renew_membership" value="1">
-              <button type="submit" class="btn btn-primary btn-sm" 
-                      onclick="return confirm('¿Confirmar renovación de membresía? La nueva fecha de vencimiento será <?= date('d/m/Y', strtotime($member['end_date'] . " + {$member['duration_days']} days")) ?>')">
-                <i class="fas fa-sync-alt"></i> Renovar
-              </button>
-            </form>
-            <a href="#" class="btn btn-success btn-sm">
-              <i class="fas fa-print"></i> Imprimir
-            </a>
-          </div>
+    <h3>Acciones</h3>
+    <div class="actions">
+        <!-- Botón que abre el modal en lugar de enviar directamente -->
+        <button type="button" class="btn btn-primary btn-sm" 
+                onclick="openRenewalModal(<?= $member['id'] ?>, <?= $member['duration_days'] ?>)">
+            <i class="fas fa-sync-alt"></i> Renovar
+        </button>
+        
+        <a href="#" class="btn btn-success btn-sm">
+            <i class="fas fa-print"></i> Imprimir
+        </a>
+    </div>
+</div>
         </div>
       </div>
     </div>

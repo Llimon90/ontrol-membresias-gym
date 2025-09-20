@@ -699,5 +699,118 @@ $membership_status = ($end_date < $today) ? 'Vencida' : 'Activa';
       window.history.replaceState({}, document.title, window.location.pathname + '?id=<?= $member_id ?>');
     <?php endif; ?>
   </script>
+
+
+<!-- Modal de Renovación de Membresía -->
+<div id="renewalModal" class="modal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+    <div class="modal-content" style="background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px;">
+        <span class="close" style="color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer;">&times;</span>
+        
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">
+            <i class="fas fa-sync-alt"></i> Renovar Membresía
+        </h2>
+        
+        <form id="renewalForm" method="post" action="process_payment.php">
+            <input type="hidden" name="member_id" id="modal_member_id">
+            <input type="hidden" name="payment_type" value="membresia">
+            <input type="hidden" name="renew_membership" value="1">
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Monto a pagar:</label>
+                <input type="number" name="amount" id="modal_amount" step="0.01" 
+                       style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" required>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Método de Pago:</label>
+                <select name="payment_method" required 
+                        style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                    <option value="">Seleccionar método</option>
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+                    <option value="transferencia">Transferencia Bancaria</option>
+                    <option value="paypal">PayPal</option>
+                    <option value="otro">Otro</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Descripción:</label>
+                <textarea name="description" 
+                          style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; height: 60px;"
+                          placeholder="Observaciones del pago">Renovación de membresía</textarea>
+            </div>
+            
+            <div class="modal-actions" style="display: flex; justify-content: space-between;">
+                <button type="button" class="btn btn-secondary" 
+                        style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    Cancelar
+                </button>
+                <button type="submit" class="btn btn-primary" 
+                        style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                    <i class="fas fa-check"></i> Confirmar Pago
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Manejo del modal de renovación
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('renewalModal');
+    const closeBtn = document.querySelector('.close');
+    const cancelBtn = document.querySelector('.btn-secondary');
+    const renewalForm = document.getElementById('renewalForm');
+    
+    // Función para abrir el modal
+    window.openRenewalModal = function(memberId, durationDays) {
+        document.getElementById('modal_member_id').value = memberId;
+        
+        // Calcular precio automáticamente (ejemplo: $30 por mes)
+        const months = Math.ceil(durationDays / 30);
+        const amount = months * 30;
+        document.getElementById('modal_amount').value = amount.toFixed(2);
+        
+        modal.style.display = 'block';
+    };
+    
+    // Cerrar modal
+    function closeModal() {
+        modal.style.display = 'none';
+    }
+    
+    // Event listeners para cerrar
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+    
+    // Cerrar al hacer clic fuera del modal
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+    
+    // Validación antes de enviar
+    renewalForm.addEventListener('submit', function(e) {
+        const amount = document.getElementById('modal_amount').value;
+        const paymentMethod = document.querySelector('select[name="payment_method"]').value;
+        
+        if (!paymentMethod) {
+            e.preventDefault();
+            alert('Por favor selecciona un método de pago');
+            return false;
+        }
+        
+        if (!amount || amount <= 0) {
+            e.preventDefault();
+            alert('Por favor ingresa un monto válido');
+            return false;
+        }
+        
+        return confirm('¿Confirmar el pago de $' + amount + '?');
+    });
+});
+</script>
 </body>
 </html>

@@ -654,55 +654,67 @@ function filterTable() {
   </div>
 </div>
 
-<!-- Sección de membresías vencidas (plegable) -->
+<!-- Sección de membresías por vencer (plegable) -->
 <div class="card">
-  <div class="card-header" onclick="toggleSection('expired-section', 'expired-icon')" style="cursor: pointer;">
+  <div class="card-header" onclick="toggleSection('expiring-section', 'expiring-icon')" style="cursor: pointer;">
     <h2 class="card-title">
-      <i class="fas fa-exclamation-triangle"></i> Membresías Vencidas
-      <i class="fas fa-chevron-down" id="expired-icon"></i>
+      <i class="fas fa-clock"></i> Membresías por Vencer (próximos 7 días)
+      <i class="fas fa-chevron-down" id="expiring-icon"></i>
     </h2>
   </div>
   
-  <div id="expired-section">
+  <div id="expiring-section">
+    <!-- Botón para enviar todos los recordatorios -->
+    <div style="padding: 10px; text-align: right;">
+      <button type="button" class="btn btn-warning" onclick="sendAllReminders()">
+        <i class="fab fa-whatsapp"></i> Enviar Recordatorios a Todos
+      </button>
+    </div>
+    
     <div class="table-responsive">
       <table>
         <thead>
           <tr>
             <th>Nombre</th>
             <th>Membresía</th>
-            <th>Días de Vencimiento</th>
+            <th>Días Restantes</th>
             <th>Fecha Vencimiento</th>
             <th>Contacto</th>
+            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           <?php 
-          $expired = $pdo->query("SELECT m.*, ms.name AS membership_name 
-                                FROM members m 
-                                JOIN memberships ms ON m.membership_id=ms.id 
-                                WHERE end_date < CURDATE()
-                                ORDER BY end_date DESC")->fetchAll(PDO::FETCH_ASSOC);
+          $expiring = $pdo->query("SELECT m.*, ms.name AS membership_name 
+                                  FROM members m 
+                                  JOIN memberships ms ON m.membership_id=ms.id 
+                                  WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+                                  ORDER BY end_date ASC")->fetchAll(PDO::FETCH_ASSOC);
           
-          foreach($expired as $m): 
+          foreach($expiring as $m): 
             $end_date = new DateTime($m['end_date']);
             $today = new DateTime();
             $interval = $today->diff($end_date);
-            $days_expired = $interval->days;
+            $days_left = $interval->days;
+            
+            // Generar mensaje personalizado
+            $message = "Hola " . $m['name'] . "! Te recordamos que tu membresía '" . 
+                      $m['membership_name'] . "' vence el " . 
+                      date('d/m/Y', strtotime($m['end_date'])) . 
+                      ". Quedan " . $days_left . " día" . ($days_left != 1 ? 's' : '') . 
+                      ". ¡Renueva a tiempo!";
+            $encoded_message = urlencode($message);
           ?>
-
-
-
-
             <tr>
               <td>
-    <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
-        <?= htmlspecialchars($m['name']) ?>
-    </a>
-</td>
+                <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
+                  <?= htmlspecialchars($m['name']) ?>
+                </a>
+              </td>
               <td><?= htmlspecialchars($m['membership_name']) ?></td>
               <td>
-                <span class="status-badge status-expired">
-                  <?= $days_expired ?> día<?= $days_expired != 1 ? 's' : '' ?>
+                <span class="status-badge status-expiring">
+                  <?= $days_left ?> día<?= $days_left != 1 ? 's' : '' ?>
                 </span>
               </td>
               <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
@@ -711,13 +723,19 @@ function filterTable() {
                   <i class="fas fa-phone"></i> Llamar
                 </a>
               </td>
+              <td>
+                <a href="https://wa.me/<?= htmlspecialchars($m['phone']) ?>?text=<?= $encoded_message ?>" 
+                   class="btn btn-whatsapp btn-sm" target="_blank">
+                  <i class="fab fa-whatsapp"></i> Enviar WhatsApp
+                </a>
+              </td>
             </tr>
           <?php endforeach; ?>
           
-          <?php if (empty($expired)): ?>
+          <?php if (empty($expiring)): ?>
             <tr>
-              <td colspan="5" style="text-align: center; color: var(--success);">
-                <i class="fas fa-check-circle"></i> No hay membresías vencidas
+              <td colspan="6" style="text-align: center; color: var(--success);">
+                <i class="fas fa-check-circle"></i> No hay membresías por vencer en los próximos 7 días
               </td>
             </tr>
           <?php endif; ?>
@@ -726,6 +744,49 @@ function filterTable() {
     </div>
   </div>
 </div>
+
+<script>
+function sendAllReminders() {
+  const whatsappButtons = document.querySelectorAll('.btn-whatsapp');
+  let index = 0;
+  
+  function openNextWindow() {
+    if (index < whatsappButtons.length) {
+      // Abrir ventana de WhatsApp
+      window.open(whatsappButtons[index].href, '_blank');
+      index++;
+      
+      // Esperar 2 segundos antes de abrir el siguiente
+      if (index < whatsappButtons.length) {
+        setTimeout(openNextWindow, 2000);
+      } else {
+        alert('Todos los recordatorios han sido abiertos en ventanas separadas.');
+      }
+    }
+  }
+  
+  if (whatsappButtons.length > 0) {
+    openNextWindow();
+  } else {
+    alert('No hay recordatorios para enviar.');
+  }
+}
+</script>
+
+<style>
+.btn-whatsapp {
+  background-color: #25D366;
+  color: white;
+  border: none;
+}
+
+.btn-whatsapp:hover {
+  background-color: #128C7E;
+  color: white;
+}
+</style>
+
+
 <!-- JavaScript mínimo para mostrar/ocultar -->
 <script>
 function toggleSection(sectionId, iconId) {

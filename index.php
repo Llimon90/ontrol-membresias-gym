@@ -358,6 +358,31 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
         margin-bottom: 15px;
       }
     }
+
+
+    #searchInput {
+  background-color: #1b2235;    /* fondo oscuro similar al de tus formularios */
+  border: 1px solid #2a3149;     /* borde suave */
+  border-radius: 6px;            /* esquinas redondeadas */
+  color: #ffffff;                /* texto claro */
+  padding: 10px 14px;            /* espacio interno cómodo */
+  font-size: 15px;
+  width: 100%;                   /* que ocupe todo el contenedor */
+  box-sizing: border-box;        /* para que el padding no “rompa” el ancho */
+  transition: border-color 0.2s, box-shadow 0.2s;  /* transición suave al enfocarse */
+}
+
+#searchInput::placeholder {
+  color: #9da7c0;        /* color gris claro para el placeholder */
+  opacity: 1;            /* que no sea muy transparente */
+}
+
+#searchInput:focus {
+  outline: none;          /* quitar borde azul/defecto del navegador */
+  border-color: #00bfff;   /* azul celeste al hacer foco */
+  box-shadow: 0 0 5px rgba(0, 191, 255, 0.4);  /* resplandor suave azul */
+}
+
   </style>
 </head>
 <body>

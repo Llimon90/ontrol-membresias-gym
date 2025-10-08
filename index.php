@@ -462,6 +462,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
 </div>
 
 <!-- Listado de miembros (plegable) -->
+<!-- Listado de miembros (plegable) -->
 <div class="card">
   <div class="card-header" onclick="toggleSection('list-section', 'list-icon')" style="cursor: pointer;">
     <h2 class="card-title">
@@ -469,10 +470,15 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
       <i class="fas fa-chevron-down" id="list-icon"></i>
     </h2>
   </div>
-  
+
   <div id="list-section">
+    <!-- 🔍 Buscador en tiempo real -->
+    <div style="padding: 10px;">
+      <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nombre..." onkeyup="filterTable()" />
+    </div>
+
     <div class="table-responsive">
-      <table>
+      <table id="membersTable">
         <thead>
           <tr>
             <th>Nombre</th>
@@ -535,6 +541,24 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
     </div>
   </div>
 </div>
+
+<!-- 🔍 Script de búsqueda -->
+<script>
+function filterTable() {
+  const input = document.getElementById("searchInput");
+  const filter = input.value.toLowerCase();
+  const table = document.getElementById("membersTable");
+  const rows = table.getElementsByTagName("tr");
+
+  for (let i = 1; i < rows.length; i++) {
+    const nameCell = rows[i].getElementsByTagName("td")[0];
+    if (nameCell) {
+      const textValue = nameCell.textContent || nameCell.innerText;
+      rows[i].style.display = textValue.toLowerCase().includes(filter) ? "" : "none";
+    }
+  }
+}
+</script>
 
     
 <!-- Sección de membresías por vencer (plegable) -->

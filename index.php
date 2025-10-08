@@ -786,7 +786,6 @@ function sendAllReminders() {
 }
 </style>
 
-
 <!-- JavaScript mínimo para mostrar/ocultar -->
 <script>
 function toggleSection(sectionId, iconId) {

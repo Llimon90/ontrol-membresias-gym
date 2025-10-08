@@ -594,7 +594,8 @@ function filterTable() {
     </h2>
   </div>
   
-  <div id="expiring-section">
+  <!-- Oculto por defecto -->
+  <div id="expiring-section" style="display: none;">
     <div class="table-responsive">
       <table>
         <thead>
@@ -608,24 +609,26 @@ function filterTable() {
         </thead>
         <tbody>
           <?php 
-          $expiring = $pdo->query("SELECT m.*, ms.name AS membership_name 
-                                  FROM members m 
-                                  JOIN memberships ms ON m.membership_id=ms.id 
-                                  WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                                  ORDER BY end_date ASC")->fetchAll(PDO::FETCH_ASSOC);
+          $expiring = $pdo->query("
+            SELECT m.*, ms.name AS membership_name 
+            FROM members m 
+            JOIN memberships ms ON m.membership_id = ms.id 
+            WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+            ORDER BY end_date ASC
+          ")->fetchAll(PDO::FETCH_ASSOC);
           
-          foreach($expiring as $m): 
+          foreach ($expiring as $m): 
             $end_date = new DateTime($m['end_date']);
             $today = new DateTime();
             $interval = $today->diff($end_date);
             $days_left = $interval->days;
           ?>
             <tr>
-             <td>
-    <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
-        <?= htmlspecialchars($m['name']) ?>
-    </a>
-</td>
+              <td>
+                <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
+                  <?= htmlspecialchars($m['name']) ?>
+                </a>
+              </td>
               <td><?= htmlspecialchars($m['membership_name']) ?></td>
               <td>
                 <span class="status-badge status-expiring">
@@ -640,7 +643,7 @@ function filterTable() {
               </td>
             </tr>
           <?php endforeach; ?>
-          
+
           <?php if (empty($expiring)): ?>
             <tr>
               <td colspan="5" style="text-align: center; color: var(--success);">
@@ -653,6 +656,19 @@ function filterTable() {
     </div>
   </div>
 </div>
+
+<script>
+  // Función para plegar/desplegar secciones
+  function toggleSection(sectionId, iconId) {
+    const section = document.getElementById(sectionId);
+    const icon = document.getElementById(iconId);
+    const isHidden = section.style.display === "none" || section.style.display === "";
+
+    section.style.display = isHidden ? "block" : "none";
+    icon.classList.toggle("fa-chevron-down", !isHidden);
+    icon.classList.toggle("fa-chevron-up", isHidden);
+  }
+</script>
 
 <!-- membresias vencidas -->
  <!-- Sección de membresías vencidas (plegable) -->

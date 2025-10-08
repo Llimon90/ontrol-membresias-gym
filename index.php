@@ -487,7 +487,6 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
 </div>
 
 <!-- Listado de miembros (plegable) -->
-<!-- Listado de miembros (plegable) -->
 <div class="card">
   <div class="card-header" onclick="toggleSection('list-section', 'list-icon')" style="cursor: pointer;">
     <h2 class="card-title">
@@ -499,7 +498,7 @@ $members = $pdo->query("SELECT m.*, ms.name AS membership_name
   <div id="list-section">
     <!-- 🔍 Buscador en tiempo real -->
     <div style="padding: 10px;">
-      <input type="text" id="searchInput" class="form-control" placeholder="Buscar por nombre..." onkeyup="filterTable()" />
+      <input type="text" id="searchInput" class="form-control" placeholder="Buscar nombre..." onkeyup="filterTable()" />
     </div>
 
     <div class="table-responsive">

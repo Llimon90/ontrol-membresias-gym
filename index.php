@@ -654,88 +654,74 @@ function filterTable() {
   </div>
 </div>
 
-<!-- Sección de membresías por vencer (plegable) -->
+<!-- membresias vencidas -->
+ <!-- Sección de membresías vencidas (plegable) -->
 <div class="card">
-  <div class="card-header" onclick="toggleSection('expiring-section', 'expiring-icon')" style="cursor: pointer;">
+  <div class="card-header" onclick="toggleSection('expired-section', 'expired-icon')" style="cursor: pointer;">
     <h2 class="card-title">
-      <i class="fas fa-clock"></i> Membresías por Vencer (próximos 7 días)
-      <i class="fas fa-chevron-down" id="expiring-icon"></i>
+      <i class="fas fa-times-circle"></i> Membresías Vencidas
+      <i class="fas fa-chevron-down" id="expired-icon"></i>
     </h2>
   </div>
-  
-  <div id="expiring-section">
-    <!-- Botón para enviar todos los recordatorios -->
-    <div style="padding: 10px; text-align: right;">
-      <button type="button" class="btn btn-warning" onclick="sendAllReminders()">
-        <i class="fab fa-whatsapp"></i> Enviar Recordatorios a Todos
-      </button>
-    </div>
-    
+
+  <div id="expired-section" style="display: none;">
     <div class="table-responsive">
       <table>
         <thead>
           <tr>
             <th>Nombre</th>
             <th>Membresía</th>
-            <th>Días Restantes</th>
+            <th>Días Vencidos</th>
             <th>Fecha Vencimiento</th>
             <th>Contacto</th>
-            <th>Acciones</th>
           </tr>
         </thead>
         <tbody>
           <?php 
-          $expiring = $pdo->query("SELECT m.*, ms.name AS membership_name 
-                                  FROM members m 
-                                  JOIN memberships ms ON m.membership_id=ms.id 
-                                  WHERE end_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-                                  ORDER BY end_date ASC")->fetchAll(PDO::FETCH_ASSOC);
-          
-          foreach($expiring as $m): 
+          // Consulta para obtener los miembros con membresía vencida
+          $expired = $pdo->query("
+            SELECT m.*, ms.name AS membership_name 
+            FROM members m 
+            JOIN memberships ms ON m.membership_id = ms.id 
+            WHERE end_date < CURDATE()
+            ORDER BY end_date DESC
+          ")->fetchAll(PDO::FETCH_ASSOC);
+
+          foreach ($expired as $m):
             $end_date = new DateTime($m['end_date']);
             $today = new DateTime();
             $interval = $today->diff($end_date);
-            $days_left = $interval->days;
-            
-            // Generar mensaje personalizado
-            $message = "Hola " . $m['name'] . "! Te recordamos que tu membresía '" . 
-                      $m['membership_name'] . "' vence el " . 
-                      date('d/m/Y', strtotime($m['end_date'])) . 
-                      ". Quedan " . $days_left . " día" . ($days_left != 1 ? 's' : '') . 
-                      ". ¡Renueva a tiempo!";
-            $encoded_message = urlencode($message);
+            $days_expired = $interval->days;
           ?>
             <tr>
               <td>
-                <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" style="color: inherit; text-decoration: none;">
+                <a href="member_profile.php?id=<?= $m['id'] ?>" class="member-profile-link" 
+                   style="color: inherit; text-decoration: none;">
                   <?= htmlspecialchars($m['name']) ?>
                 </a>
               </td>
               <td><?= htmlspecialchars($m['membership_name']) ?></td>
               <td>
-                <span class="status-badge status-expiring">
-                  <?= $days_left ?> día<?= $days_left != 1 ? 's' : '' ?>
+                <span class="status-badge status-expired">
+                  <?= $days_expired ?> día<?= $days_expired != 1 ? 's' : '' ?>
                 </span>
               </td>
               <td><?= date('d/m/Y', strtotime($m['end_date'])) ?></td>
               <td>
-                <a href="tel:<?= htmlspecialchars($m['phone']) ?>" class="btn btn-success btn-sm">
-                  <i class="fas fa-phone"></i> Llamar
-                </a>
-              </td>
-              <td>
-                <a href="https://wa.me/<?= htmlspecialchars($m['phone']) ?>?text=<?= $encoded_message ?>" 
-                   class="btn btn-whatsapp btn-sm" target="_blank">
-                  <i class="fab fa-whatsapp"></i> Enviar WhatsApp
+                <!-- Enlace de WhatsApp (abre conversación) -->
+                <a href="https://wa.me/52<?= htmlspecialchars($m['phone']) ?>?text=Hola%20<?= urlencode($m['name']) ?>,%20tu%20membresía%20ha%20vencido.%20¡Te%20invitamos%20a%20renovarla%20hoy!" 
+                   target="_blank"
+                   class="btn btn-success btn-sm">
+                  <i class="fab fa-whatsapp"></i> WhatsApp
                 </a>
               </td>
             </tr>
           <?php endforeach; ?>
-          
-          <?php if (empty($expiring)): ?>
+
+          <?php if (empty($expired)): ?>
             <tr>
-              <td colspan="6" style="text-align: center; color: var(--success);">
-                <i class="fas fa-check-circle"></i> No hay membresías por vencer en los próximos 7 días
+              <td colspan="5" style="text-align: center; color: var(--success);">
+                <i class="fas fa-check-circle"></i> No hay membresías vencidas
               </td>
             </tr>
           <?php endif; ?>
@@ -746,62 +732,20 @@ function filterTable() {
 </div>
 
 <script>
-function sendAllReminders() {
-  const whatsappButtons = document.querySelectorAll('.btn-whatsapp');
-  let index = 0;
-  
-  function openNextWindow() {
-    if (index < whatsappButtons.length) {
-      // Abrir ventana de WhatsApp
-      window.open(whatsappButtons[index].href, '_blank');
-      index++;
-      
-      // Esperar 2 segundos antes de abrir el siguiente
-      if (index < whatsappButtons.length) {
-        setTimeout(openNextWindow, 2000);
-      } else {
-        alert('Todos los recordatorios han sido abiertos en ventanas separadas.');
-      }
+  // Función para alternar visibilidad de secciones plegables
+  function toggleSection(sectionId, iconId) {
+    var section = document.getElementById(sectionId);
+    var icon = document.getElementById(iconId);
+    if (section.style.display === "none" || section.style.display === "") {
+      section.style.display = "block";
+      icon.classList.remove("fa-chevron-down");
+      icon.classList.add("fa-chevron-up");
+    } else {
+      section.style.display = "none";
+      icon.classList.remove("fa-chevron-up");
+      icon.classList.add("fa-chevron-down");
     }
   }
-  
-  if (whatsappButtons.length > 0) {
-    openNextWindow();
-  } else {
-    alert('No hay recordatorios para enviar.');
-  }
-}
-</script>
-
-<style>
-.btn-whatsapp {
-  background-color: #25D366;
-  color: white;
-  border: none;
-}
-
-.btn-whatsapp:hover {
-  background-color: #128C7E;
-  color: white;
-}
-</style>
-
-<!-- JavaScript mínimo para mostrar/ocultar -->
-<script>
-function toggleSection(sectionId, iconId) {
-  const section = document.getElementById(sectionId);
-  const icon = document.getElementById(iconId);
-  
-  if (section.style.display === 'none') {
-    section.style.display = 'block';
-    icon.classList.remove('fa-chevron-up');
-    icon.classList.add('fa-chevron-down');
-  } else {
-    section.style.display = 'none';
-    icon.classList.remove('fa-chevron-down');
-    icon.classList.add('fa-chevron-up');
-  }
-}
 </script>
 
 
